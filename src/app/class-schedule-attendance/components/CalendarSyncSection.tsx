@@ -1,0 +1,181 @@
+'use client';
+import React, { useState } from 'react';
+import { Calendar, Download, Unlink, RefreshCw, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+// Backend integration point: fetch user's calendar sync status from /api/calendar-connections?userId=me
+const MOCK_SYNC_STATUS = {
+  google: {
+    connected: true,
+    calendarName: 'לוח השנה האישי שלי',
+    syncedCount: 4,
+    lastSynced: '12/09/2026 17:45',
+  },
+  apple: {
+    connected: false,
+    lastExport: null as string | null,
+  },
+};
+
+export default function CalendarSyncSection() {
+  const [googleStatus, setGoogleStatus] = useState(MOCK_SYNC_STATUS.google);
+  const [appleStatus] = useState(MOCK_SYNC_STATUS.apple);
+  const [syncing, setSyncing] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleGoogleSync = async () => {
+    setSyncing(true);
+    // Backend integration point: POST /api/calendar/sync { provider: 'google' }
+    await new Promise((r) => setTimeout(r, 1500));
+    setSyncing(false);
+    setGoogleStatus((prev) => ({ ...prev, lastSynced: '12/09/2026 18:08' }));
+    toast.success('הסנכרון עם Google Calendar הושלם.');
+  };
+
+  const handleGoogleDisconnect = () => {
+    // Backend integration point: DELETE /api/calendar-connections?provider=google
+    toast.success('הסנכרון נותק בהצלחה.');
+    setGoogleStatus({ connected: false, calendarName: '', syncedCount: 0, lastSynced: '' });
+  };
+
+  const handleGoogleConnect = () => {
+    // Backend integration point: GET /api/auth/google/calendar — OAuth flow
+    toast.info('מעביר לחיבור Google Calendar...');
+  };
+
+  const handleICSExport = async () => {
+    setExporting(true);
+    // Backend integration point: GET /api/calendar/export/ics?userId=me — generates ICS file
+    await new Promise((r) => setTimeout(r, 800));
+    setExporting(false);
+    toast.success('קובץ ICS הורד בהצלחה. פתח אותו ביישום היומן שלך.');
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5 card-shadow fade-in">
+      <h2 className="text-base font-bold text-foreground mb-4">סנכרון יומן אישי</h2>
+      <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+        רק אירועים שסימנת שאתה מתכנן להגיע אליהם יתווספו ליומן האישי שלך.
+      </p>
+
+      <div className="space-y-4">
+        {/* Google Calendar */}
+        <div className="border border-border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
+                <Calendar size={18} className="text-red-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Google Calendar</p>
+                {googleStatus.connected && (
+                  <p className="text-xs text-muted-foreground">{googleStatus.calendarName}</p>
+                )}
+              </div>
+            </div>
+            <span
+              className={`text-2xs font-semibold px-2.5 py-1 rounded-full ${
+                googleStatus.connected
+                  ? 'bg-green-50 text-green-700' :'bg-muted text-muted-foreground'
+              }`}
+            >
+              {googleStatus.connected ? 'מחובר' : 'לא מחובר'}
+            </span>
+          </div>
+
+          {googleStatus.connected ? (
+            <>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-muted rounded-lg p-2 text-center">
+                  <p className="text-sm font-bold text-foreground font-tabular">{googleStatus.syncedCount}</p>
+                  <p className="text-2xs text-muted-foreground">אירועים מסונכרנים</p>
+                </div>
+                <div className="bg-muted rounded-lg p-2 text-center">
+                  <p className="text-xs font-semibold text-foreground font-tabular">{googleStatus.lastSynced}</p>
+                  <p className="text-2xs text-muted-foreground">סנכרון אחרון</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleGoogleSync}
+                  disabled={syncing}
+                  className="btn-primary text-xs py-2 flex-1"
+                >
+                  {syncing ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      מסנכרן...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw size={13} />
+                      סנכרן עכשיו
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleGoogleDisconnect}
+                  className="btn-ghost text-xs py-2 px-3 text-destructive hover:bg-red-50"
+                >
+                  <Unlink size={13} />
+                  נתק
+                </button>
+              </div>
+            </>
+          ) : (
+            <button onClick={handleGoogleConnect} className="btn-secondary w-full text-sm py-2">
+              חבר Google Calendar
+            </button>
+          )}
+        </div>
+
+        {/* Apple Calendar / ICS */}
+        <div className="border border-border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Calendar size={18} className="text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Apple Calendar</p>
+                <p className="text-xs text-muted-foreground">ייצוא קובץ ICS אישי</p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+            הורד קובץ ICS הכולל רק את האירועים שסימנת שאתה מתכנן להגיע אליהם. פתח אותו ביישום היומן שלך.
+          </p>
+
+          {appleStatus.lastExport && (
+            <p className="text-2xs text-muted-foreground mb-2">
+              ייצוא אחרון: {appleStatus.lastExport}
+            </p>
+          )}
+
+          <button
+            onClick={handleICSExport}
+            disabled={exporting}
+            className="btn-secondary w-full text-sm py-2"
+          >
+            {exporting ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                מכין קובץ...
+              </>
+            ) : (
+              <>
+                <Download size={14} />
+                ייצא ל-Apple Calendar
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <p className="text-2xs text-muted-foreground mt-4">
+        היומן החיצוני שלך פרטי לחלוטין. האפליקציה לא קוראת אירועים אחרים מהיומן שלך.
+      </p>
+    </div>
+  );
+}

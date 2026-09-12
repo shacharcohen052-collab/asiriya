@@ -1,0 +1,316 @@
+export interface Member {
+  profileId: number;
+  email: string;
+  displayName: string;
+  lifeWork: string | null;
+  relationshipStatus: string | null;
+  hobbies: string | null;
+  pathDuration: string | null;
+  connectionStrength: string | null;
+  desiredQuality: string | null;
+  teamDayIdea: string | null;
+}
+
+export const MEMBERS: Member[] = [
+  {
+    profileId: 1,
+    email: "shachar.cohen052@gmail.com",
+    displayName: "שחר כהן",
+    lifeWork: "חייל בצבא",
+    relationshipStatus: "רווק",
+    hobbies: "מוזיקה וספורט, מסחר בשוק ההון, תופים ו AI\nפרויקטים פעילים:\nאני כותב ספר עם סבתא על החיים שלה.",
+    pathDuration: "חצי שנה",
+    connectionStrength: "המסגרת, לראות אנשים קמים לשיעור בוקר עושה לי רצון להיות חלק",
+    desiredQuality: "עשיה מחוץ לקבלה, התכוללות בנינו.",
+    teamDayIdea: "ים."
+  },
+  {
+    profileId: 30001,
+    email: "yoniberk199@gmail.com",
+    displayName: "יונתן",
+    lifeWork: "מברקן, בן 27 קצין בחיל אוויר מתעסק בהנדסת מערכת",
+    relationshipStatus: "רווק",
+    hobbies: "ספורט, צלילה, טיולים",
+    pathDuration: "9 שנים בדרך\nמחשבה שהחיים לא נועדו בשביל לאכול, לעבוד, טיפה להנות עם חברים/משפחה לישון וחוזר, חייב להיות משהו מעבר",
+    connectionStrength: "גדלות החברה והבורא, חשיבות וכוח להתמיד",
+    desiredQuality: "כוונה בעל מנת להשפיע",
+    teamDayIdea: "על האש"
+  },
+  {
+    profileId: 60001,
+    email: "shayreshef1@gmail.com",
+    displayName: "שי רשף",
+    lifeWork: "קוראים לי שי מראשון לציון סטודנט טכנאי מחשבים ומנהל רשתות עובד בתחום הייצור וההרכבות",
+    relationshipStatus: "רווק",
+    hobbies: "מנגל שר ומצייר אוהב סרטים ואנימה (סדרות יפניות) יש לי 2 כוכבי צלילה ואוהב לגלוש מידי פעם",
+    pathDuration: "בדצמבר הקרוב יהיה לי 3 שנים. אמא שלי לומדת הרבה שנים בדרך. מאז שהייתי קטן שום דבר לא סיפק אותי תמיד חיפשתי משמעות לחיים ולא מצאתי.",
+    connectionStrength: "ההתמדה שלהם. החברים נותנים לי ביטחון ברצינות שלהם שחשוב להם המטרה.",
+    desiredQuality: "הייתי רוצה לבוא יותר עם לב פתוח. להסיר מגננות לבוא עם הכוונה שאלו הם האחים שלי.",
+    teamDayIdea: "כנראה ללכת לראות סרט ואז לשבת באיזה בר/לעשות טראק כמה ימים עם אוהלים אווירה טובה"
+  },
+  {
+    profileId: 90001,
+    email: "rondahan17@gmail.com",
+    displayName: "רון דהן",
+    lifeWork: "רון, מנשר, מתעסק באדריכלות",
+    relationshipStatus: "רווק",
+    hobbies: "בישול, ציור, אנימה, מוזיקה אלקטרונית",
+    pathDuration: "לפני שבע שנים נתקלתי במקרה ברב בטלוויזה",
+    connectionStrength: "תמיכה",
+    desiredQuality: "הייתי רוצה להיות יותר רגיש למצב של החברים שאדע איך ומה לבקש עבורם",
+    teamDayIdea: "יום גיבוש בסגנון של הטיול הקודם היה מאוד מוצלח"
+  },
+  {
+    profileId: 120001,
+    email: "yehudasha@gmail.com",
+    displayName: "יהודה שדמון",
+    lifeWork: "יהודה, פתח תקווה, סטודנט להנדסאי מכונות בהתמחות רובוטיקה באוניברסיטת אריאל",
+    relationshipStatus: "יוצא עם מישהי חמודה כבר חודש",
+    hobbies: "מוסיקה, אלקטרוניקה, רובוטיקה, חקלאות, מחקרי עתידנות בנושאי כלכלה וטכנולוגיה",
+    pathDuration: "ברוטו 26, נטו 4 שנים.\nבאתי לדרך אחרי שעברתי מצבים בצבא",
+    connectionStrength: "תפילות, לפעמים באמצע היום אני פשוט מרגיש שמישהו מתפלל עבור העשירייה וזה ישר נותן לי כוח, ממש כמו דומינו.",
+    desiredQuality: "יצירת מוזיקה משותפת, מבחינת כוונה יותר הודיה.",
+    teamDayIdea: "קאנטה על נהר הירדן, אוהלים, על האש, מדורה עם שירים, ישיבת חברים"
+  },
+  {
+    profileId: 150001,
+    email: "davidisofer@gmail.com",
+    displayName: "דוד סופר",
+    lifeWork: "דוד גר בפתח תקווה, עובד בבנק, ומשתדל לחיות כמה שיותר בבני ברוך",
+    relationshipStatus: "בזוגיות",
+    hobbies: "טיולים, קצת שוק ההון והרבה מאמרי רב״ש",
+    pathDuration: "נולדתי לדרך, אבל באמת מגיל 15 אני בזכות עצמי",
+    connectionStrength: "כוח, גדלות וחשיבות, ותקווה לזה שאנחנו יכולים להגדיל את הקהילה הענקית שלנו",
+    desiredQuality: "גדלות המטרה, תמיכה ודוגמא כמה שיותר",
+    teamDayIdea: "טיול קטן פיזי, ועל אש גדול ושמח לסיום, אם אפשר לתת קפיצה לקבר בעל הסולם או רב״ש"
+  },
+  {
+    profileId: 180001,
+    email: "lior.elhan@gmail.com",
+    displayName: "ליאור אלחננוב",
+    lifeWork: "אני ליאור מפתח תקווה, עובד כיועץ מנכ\"ל במשרד ממשלתי בירושלים",
+    relationshipStatus: "בזוגיות",
+    hobbies: "ספורט - כדורגל, טניס, צילום",
+    pathDuration: "אני בדרך מאז שאני ילד, דרך הוריי שנחשפו לחוכמת הקבלה",
+    connectionStrength: "מאוד מתפעל מלראות את החברים מידי יום יושבים בשיעור, דרוכים ובולעים כל מילה של רב",
+    desiredQuality: "פתיחות, חיבור, סבלנות",
+    teamDayIdea: "קמפינג, על האש, יום ספורט"
+  },
+  {
+    profileId: 210001,
+    email: "daniel@danforce.com",
+    displayName: "דניאל ויזל",
+    lifeWork: "דניאל ויזל מתל אביב, אחראי על פיתוח שיווק ומיתוג של חברת אורטופדיה",
+    relationshipStatus: "נשוי",
+    hobbies: "חכמת הקבלה, פאדל, כדורסל, טניס, פוקר",
+    pathDuration: "אני התחלתי בגיל 24, והייתי הולך לשיעורי בוקר. ביום כיפור האחרון, אישתי אמרה לי לשים מטרות ליום הזה, ומאז הכל השתנה.",
+    connectionStrength: null,
+    desiredQuality: "יזמות",
+    teamDayIdea: "על האש, בריכה, ספורט"
+  },
+  {
+    profileId: 240001,
+    email: "israelsh95@gmail.com",
+    displayName: "ישראל שוסטרמן",
+    lifeWork: "ישראל, מפתח תקווה בן 31 מורה לחינוך מיוחד בבית ספר יסודי מתחיל שנה שישית בתחום",
+    relationshipStatus: "בזוגיות 3 וחצי שנים",
+    hobbies: "ספורט, כדורסל וNBA בפרט",
+    pathDuration: "נולדתי בדרך אז בעיקרון כל החיים אבל עכשיו נכנסתי לעשירייה",
+    connectionStrength: "מקבל מהם התפעלות גדולה יום יום וקנאה גדולה בחברים הגדולים כמה שהם חזקים ומצליחים להתמיד",
+    desiredQuality: "כוונה לשרת את החברים ולחזק את החברים",
+    teamDayIdea: "הייתי מציע יום ספורט ביחד כדורגל או כדורסל, או איזה על האש ביער בן שמן"
+  },
+  {
+    profileId: 270001,
+    email: "bobcatman83@gmail.com",
+    displayName: "איתמר",
+    lifeWork: null,
+    relationshipStatus: null,
+    hobbies: "אוכל, אפייה",
+    pathDuration: "נולדתי להורים בדרך",
+    connectionStrength: "חשיבות וגדלות המטרה",
+    desiredQuality: "דאגה עבור החברים",
+    teamDayIdea: "לראות סרט, או לעשות טיול בטבע אבל משהו קל עם מקום להיכנס למים"
+  },
+  {
+    profileId: 300001,
+    email: "yardeng04@gmail.com",
+    displayName: "ירדן גבריאלי",
+    lifeWork: "ירדן מיקנעם, באוקטובר מתחיל לימודים של פסיכולוגיה וחינוך בבן גוריון בבאר שבע",
+    relationshipStatus: "רווק",
+    hobbies: "טניס וכל תחומי המחבטים (פאדל, פיקלבול ומטקות בים), גלישת קייט, כדור עף חופים וגם היסטוריה",
+    pathDuration: "אני שנה בדרך, בעקבות תחושת ריקנות חזקה לקראת סוף השירות הצבאי",
+    connectionStrength: "אני מקבל דוגמא שאליה אני רוצה לשאוף להיות כמו החברים",
+    desiredQuality: "השקעה - אני רוצה להשקיע יותר מתנות, מחשבות, רגשות בחברים בתחושה שהם החיים שלי",
+    teamDayIdea: "טיול במדבר עם סיום באילת"
+  },
+  {
+    profileId: 330001,
+    email: "yohayi.amar@gmail.com",
+    displayName: "יוחאי עמר",
+    lifeWork: "יוחאי, מפתח תקווה, עובד כנהג גרר",
+    relationshipStatus: "רווק",
+    hobbies: "רכבים, אופנועים, ספורט, שחיה, טיולים, בלויים עם החברים, טניס",
+    pathDuration: "17 שנה במצטבר, והגעתי מתוך חיסרון ענק שמלווה אותי מאז שאני זוכר את עצמי",
+    connectionStrength: "מקבל מהם נחישות, דוגמא חיובית להתמדה בדרך, ממש עד לדבקות",
+    desiredQuality: "יותר סבלנות, ולהיות מסוגל לשייך לבורא כל מצב שמגיע",
+    teamDayIdea: "אני בעד יום ספא כזה, סאונה ובריכות חמות ומסאז אולי, אפשר ללכת בשישי בבוקר לחמי געש"
+  },
+  {
+    profileId: 360001,
+    email: "sbskab11@gmail.com",
+    displayName: "שלמה בן שלום",
+    lifeWork: "אני שלמה ממעלות (במקור פ״ת), סטודנט ומועמד לגיוס.",
+    relationshipStatus: "רווק",
+    hobbies: "טיול עם חברים",
+    pathDuration: "נולדתי בה, הביאו אותי אבי ואמי והקב״ה",
+    connectionStrength: "דאגה ע״פ בקורת",
+    desiredQuality: "מחויבות עצמית והתחייבות כלפי האחרים",
+    teamDayIdea: "לחיים!"
+  },
+  {
+    profileId: 390001,
+    email: "shimirain@gmail.com",
+    displayName: "שימי",
+    lifeWork: "שימי מפתח תקוה בן 28 בשנים האחרונות עבדתי כרל״ש וכמנהל התקשורת של שר החינוך",
+    relationshipStatus: "רווק",
+    hobbies: "הפצה ופיתוח קהילת הצעירים",
+    pathDuration: "ההורים שלי הגיעו כשהייתי בן 3",
+    connectionStrength: "הדוגמה שאני מקבל מכל חבר נותנת כוח אדיר. כל מאמץ הכי קטן של חבר מעורר השראה ונותן כוח",
+    desiredQuality: null,
+    teamDayIdea: "פעילות ספורטיבית"
+  },
+  {
+    profileId: 420001,
+    email: "pangolier58@gmail.com",
+    displayName: "מיכאל חיימוב",
+    lifeWork: "אני מיכאל מאזור, עובד בשיטור עירוני תל אביב",
+    relationshipStatus: "בזוגיות",
+    hobbies: "מוזיקה, ספורט, התפתחות אישית, אנימה, פסיכולוגיה",
+    pathDuration: "בערך חצי שנה פחות או יותר, כל מיני סימנים בדרך שפגשתי שגרמו לי לבדוק על הקבלה",
+    connectionStrength: "היחס, האהבה הבלתי פוסקת, הרצון להשפיע, החיבור בנינו מיום ליום גורם לי להתחזק",
+    desiredQuality: "הייתי רוצה להביא מעצמי יותר פתיחות ויותר השתתפות בשיעורים ובעשירייה",
+    teamDayIdea: "כמו הטיול יום שעשינו, היה מושלם ואין טעויות"
+  },
+  {
+    profileId: 510001,
+    email: "yarden326181724@gmail.com",
+    displayName: "טל בורנשטיין",
+    lifeWork: "טל בורנשטיין מחולון אני הנדסאי חשמל ועובד בחברת החשמל",
+    relationshipStatus: "רווק",
+    hobbies: "דלג",
+    pathDuration: "בסביבות 10 שנים בעקבות שהרגשתי ריקנות ענקית כזאת למרות שהייתי מוקף אנשים",
+    connectionStrength: "התמדה - אני רואה איך החברים משקיעים מגיעים ולא מוותרים וזה נותן כח לעשות כך גם",
+    desiredQuality: "הייתי רוצה להביא יותר חשיבות לדרך ולמטרה שלנו",
+    teamDayIdea: "הייתי מציע שנעשה על האש עם המרצים והמדריכים שלנו באיזה פארק"
+  },
+  {
+    profileId: 540001,
+    email: "or.shperling1@gmail.com",
+    displayName: "אור",
+    lifeWork: "אור מרמת גן, בן 29, מורה נהיגה ויצרן ליקרים.",
+    relationshipStatus: "רווק",
+    hobbies: "מכוניות, כסף, חוקים ושווארמה.",
+    pathDuration: "6 וחצי שנים, אמא שלי היתה לקראת סיום קמפוס א' והציעו לי להצטרף לסוף הקמפוס בחינם.",
+    connectionStrength: "האינטנסיביות, והטוטאליות של החברים בדרך מעוררת בי המון קנאה ורצון להשוות צורה לחברים",
+    desiredQuality: "הקרבה",
+    teamDayIdea: "טרק בטבע."
+  },
+  {
+    profileId: 630001,
+    email: "shshadmon@gmail.com",
+    displayName: "שלמה שדמון",
+    lifeWork: "שלמה מפתח תקווה ואני יזם ומוזיקאי :)",
+    relationshipStatus: "רווק",
+    hobbies: "ספורט, מוזיקה, יזמות, אקטואליה, קהילות, ועוד הרבה דברים",
+    pathDuration: "מהיום שנולדתי - אבא :)",
+    connectionStrength: "גדלות המטרה! - מוטיבציה לבוא לשעורים",
+    desiredQuality: "נכונות לעשייה רוחנית, להיות בבערה כמוהם",
+    teamDayIdea: "יש לי כלכך הרבה רעיונות שאין פה באמת מספיק מקום לכתוב את כולם"
+  },
+  {
+    profileId: 660001,
+    email: "baruch.ratz@gmail.com",
+    displayName: "ברוך רץ",
+    lifeWork: "ברוך, פתח תקווה, עדיין בצה\"ל",
+    relationshipStatus: "רווק, צריך לשנות",
+    hobbies: "מוזיקה, צילום, כל נושא אקראי בעולם, אני תמיד מחפש דברים חדשים",
+    pathDuration: "הגעתי דרך ההורים לפני 21 שנה, נשאר כל יום בזכות החברים.",
+    connectionStrength: "השקעה מעבר למצופה דוגמה של חברים שמשקיעים מעבר למסגרת שלהם",
+    desiredQuality: "באמת להראות אהבה",
+    teamDayIdea: "כל דבר שמאפשר לנו ליצור קשר פנימי יותר עמוק.\n\nסומך עליכם"
+  },
+  {
+    profileId: 690001,
+    email: "alex.mizrachi@gmail.com",
+    displayName: "אלכס מזרחי",
+    lifeWork: "אני אלכס, מפתח תקוה. אני מנהל טכני בבני ברוך",
+    relationshipStatus: "נשוי ויש לי 4 בנות",
+    hobbies: "טכנולוגיה בעיקר",
+    pathDuration: "בדרך 20 שנה, אלה החיים שלי",
+    connectionStrength: "תמיד מיזק אותי לראות את החברים בהתלהבות מהדרך",
+    desiredQuality: null,
+    teamDayIdea: null
+  },
+  {
+    profileId: 720001,
+    email: "2021nati.mn@gmail.com",
+    displayName: "נתנאל בן עיון",
+    lifeWork: "אני נתי מפתח תקווה ועובד בצהל",
+    relationshipStatus: "רווק",
+    hobbies: "אנימה, קפוארה",
+    pathDuration: "3 שנים, גדלתי בדרך אבל מה שהחזיק אותי היה תקופת המלחמה",
+    connectionStrength: "שיחות זום היומיות",
+    desiredQuality: "התמדה",
+    teamDayIdea: "על האש"
+  },
+  {
+    profileId: 750001,
+    email: "noamabbb@gmail.com",
+    displayName: "נועם אבואב",
+    lifeWork: "אני נועם בן 23 מפתח תקווה",
+    relationshipStatus: "רווק",
+    hobbies: "ספורט",
+    pathDuration: "מלידה, אבל נכנסתי לפני שנה מרצון עצמאי",
+    connectionStrength: "מקבל דוגמה אישית, חשיבות וגדלות המטרה והמון חום ואהבה",
+    desiredQuality: "הקשבה, נתינה, קרבה והמון התמדה וסבלנות",
+    teamDayIdea: "כל דבר שיגבש אותנו ויחזק את הקשר בינינו הוא מבורך"
+  },
+  {
+    profileId: 810001,
+    email: "akuo8181@gmail.com",
+    displayName: "שלום לוי",
+    lifeWork: "שלום לוי, מפתח תקווה, bi, מחפש דרכים להרחיב את ההסתכלות שלי ואופקים חדשים",
+    relationshipStatus: "רווק",
+    hobbies: "סוציולוגיה, שפת גוף, תקשורת בן אישית, חינוך, רומנטיקה, כסף, הפצה, גדלות הרב והעשירייה, אופנה-אלגנט",
+    pathDuration: "נולדתי בדרך, בשיעורים קבוע מ 16.5",
+    connectionStrength: "בושה מהחברים, שהם עושים כל כך הרבה.\nשהם באים עם תשוקה פנימית אמיתית, חזקה, pure.",
+    desiredQuality: "\"להכניס מרץ בהחברה\"\nשמחה\nדוגמה אישית",
+    teamDayIdea: "ספיד דייט - אחד על אחד ומריצים שאלות, ומתחלפים כל כמה זמן, אני אשמח להכיר אישית לעומק את החברים."
+  }
+];
+
+export function getInitials(name: string): string {
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) return parts[0][0] + parts[1][0];
+  return name[0] || '?';
+}
+
+export const AVATAR_PALETTE = [
+  'bg-primary',
+  'bg-accent',
+  'bg-teal-500',
+  'bg-amber-500',
+  'bg-rose-400',
+  'bg-violet-500',
+  'bg-sky-500',
+  'bg-emerald-500',
+  'bg-orange-500',
+  'bg-pink-500',
+  'bg-indigo-500',
+  'bg-cyan-500',
+];
+
+export function getAvatarColor(index: number): string {
+  return AVATAR_PALETTE[index % AVATAR_PALETTE.length];
+}
