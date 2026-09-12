@@ -2,16 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import AppLogo from '@/components/ui/AppLogo';
-import {
-  Home,
-  Users,
-  CalendarDays,
-  RotateCcw,
-  User,
-  Settings,
-  LogOut,
-  CheckSquare,
-} from 'lucide-react';
+import { Home, Users, CalendarDays, RotateCcw, User, Settings, LogOut, Trophy, Upload,  } from 'lucide-react';
 import Icon from '@/components/ui/AppIcon';
 
 
@@ -28,14 +19,15 @@ const navGroups = [
     items: [
       { href: '/members', label: 'חברי העשירייה', icon: Users },
       { href: '/connection-duties', label: 'סידור תורני חיבור', icon: RotateCcw },
+      { href: '/import-profiles', label: 'ייבוא פרופילים', icon: Upload },
     ],
   },
   {
     label: 'אישי',
     items: [
-      { href: '#profile', label: 'פרופיל אישי', icon: User },
-      { href: '#progress', label: 'בדיקת התקדמות', icon: CheckSquare },
-      { href: '#settings', label: 'הגדרות', icon: Settings },
+      { href: '/profile', label: 'פרופיל אישי', icon: User },
+      { href: '/score', label: 'ניקוד ומובילים', icon: Trophy },
+      { href: '/settings', label: 'הגדרות', icon: Settings },
     ],
   },
 ];
@@ -63,7 +55,7 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
             ש
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-600 text-foreground truncate">שחר לוי</p>
+            <p className="text-sm font-600 text-foreground truncate">שחר כהן</p>
             <p className="text-xs text-muted-foreground">עשירייה ב׳</p>
           </div>
         </div>

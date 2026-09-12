@@ -10,7 +10,8 @@ import {
   User,
   Settings,
   LogOut,
-  CheckSquare,
+  Trophy,
+  Upload,
   X,
   Menu,
 } from 'lucide-react';
@@ -30,14 +31,15 @@ const navGroups = [
     items: [
       { href: '/members', label: 'חברי העשירייה', icon: Users },
       { href: '/connection-duties', label: 'סידור תורני חיבור', icon: RotateCcw },
+      { href: '/import-profiles', label: 'ייבוא פרופילים', icon: Upload },
     ],
   },
   {
     label: 'אישי',
     items: [
-      { href: '#profile', label: 'פרופיל אישי', icon: User },
-      { href: '#progress', label: 'בדיקת התקדמות', icon: CheckSquare },
-      { href: '#settings', label: 'הגדרות', icon: Settings },
+      { href: '/profile', label: 'פרופיל אישי', icon: User },
+      { href: '/score', label: 'ניקוד ומובילים', icon: Trophy },
+      { href: '/settings', label: 'הגדרות', icon: Settings },
     ],
   },
 ];
@@ -103,7 +105,7 @@ export default function MobileNav({ activeRoute }: MobileNavProps) {
               ש
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">שחר לוי</p>
+              <p className="text-sm font-semibold text-foreground">שחר כהן</p>
               <p className="text-xs text-muted-foreground">עשירייה ב׳</p>
             </div>
           </div>

@@ -18,7 +18,7 @@ export default function AppLayout({ children, activeRoute }: AppLayoutProps) {
         {/* Mobile top bar */}
         <MobileNav activeRoute={activeRoute} />
 
-        <main className="flex-1 px-4 pt-4 pb-24 lg:px-8 lg:pt-8 lg:pb-8 max-w-screen-2xl mx-auto w-full">
+        <main className="flex-1 px-4 pt-4 pb-24 lg:px-8 lg:pt-8 lg:pb-8 max-w-screen-2xl mx-auto w-full page-enter">
           {children}
         </main>
       </div>
