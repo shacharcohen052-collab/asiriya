@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createClient } from '../lib/supabase/client';
 
 interface UserProfile {
@@ -50,6 +50,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
+  // Track last fetched userId to avoid redundant DB calls
+  const lastFetchedUserId = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
@@ -66,31 +68,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const p = await fetchProfile(session.user.id);
-        setProfile(p);
-      }
+    // Safety timeout — never hang longer than 5 seconds
+    const safetyTimer = setTimeout(() => {
       setLoading(false);
-    });
+    }, 5000);
 
+    // Use onAuthStateChange as the single source of truth.
+    // It fires immediately with the current session on mount (INITIAL_SESSION event),
+    // so we don't need a separate getSession() call.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+
       if (session?.user) {
-        const p = await fetchProfile(session.user.id);
-        setProfile(p);
+        // Only fetch profile if the user changed (avoids double-fetch on token refresh)
+        if (lastFetchedUserId.current !== session.user.id) {
+          lastFetchedUserId.current = session.user.id;
+          const p = await fetchProfile(session.user.id);
+          setProfile(p);
+        }
       } else {
+        lastFetchedUserId.current = null;
         setProfile(null);
       }
+
+      // Mark loading done after first event
+      clearTimeout(safetyTimer);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, metadata: Record<string, string> = {}) => {
@@ -128,6 +140,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    lastFetchedUserId.current = null;
     setProfile(null);
   };
 
@@ -144,6 +157,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshProfile = async () => {
     if (!user) return;
+    lastFetchedUserId.current = null; // force re-fetch
     const p = await fetchProfile(user.id);
     setProfile(p);
   };
