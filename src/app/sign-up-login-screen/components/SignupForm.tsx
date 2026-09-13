@@ -3,11 +3,10 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SignupFormData {
   fullName: string;
-  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -21,7 +20,11 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const router = useRouter();
+  const { signUp, signInWithGoogle } = useAuth();
 
   const {
     register,
@@ -32,18 +35,68 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
 
   const passwordValue = watch('password', '');
 
-  const onSubmit = async (_data: SignupFormData) => {
+  const onSubmit = async (data: SignupFormData) => {
     setLoading(true);
-    // Backend integration point: POST /api/auth/signup { fullName, username, email, password }
-    await new Promise((r) => setTimeout(r, 1400));
-    setLoading(false);
-    toast.success('החשבון נוצר! ברוך הבא לעשירייה.');
-    router.push('/');
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      await signUp(data.email, data.password, { fullName: data.fullName });
+      // After signup, check if profile is approved
+      router.push('/');
+      router.refresh();
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (msg.includes('already registered') || msg.includes('already exists')) {
+        setErrorMsg('כתובת האימייל כבר רשומה. נסה להתחבר.');
+      } else {
+        setErrorMsg(msg || 'שגיאה בהרשמה. נסה שוב.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    setErrorMsg('');
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'שגיאה בהתחברות עם Google.');
+      setGoogleLoading(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className="space-y-4">
+        {/* Google OAuth Button */}
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={googleLoading || loading}
+          className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-border rounded-xl bg-card hover:bg-muted transition-colors text-sm font-semibold text-foreground"
+          style={{ minHeight: '48px' }}
+        >
+          {googleLoading ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#34A853"/>
+              <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+            </svg>
+          )}
+          <span>{googleLoading ? 'מתחבר...' : 'הרשמה עם Google'}</span>
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground">או</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+
         {/* Full name */}
         <div>
           <label htmlFor="signup-name" className="block text-sm font-semibold text-foreground mb-1.5">
@@ -62,36 +115,13 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
           )}
         </div>
 
-        {/* Username */}
-        <div>
-          <label htmlFor="signup-username" className="block text-sm font-semibold text-foreground mb-1.5">
-            שם משתמש
-          </label>
-          <p className="text-2xs text-muted-foreground mb-1.5">כיצד תוצג לחברי העשירייה</p>
-          <input
-            id="signup-username"
-            type="text"
-            autoComplete="username"
-            placeholder="שחר123"
-            className={`input-field ${errors.username ? 'error' : ''}`}
-            {...register('username', {
-              required: 'שם משתמש הוא שדה חובה',
-              minLength: { value: 3, message: 'לפחות 3 תווים' },
-              pattern: { value: /^[a-zA-Z0-9\u0590-\u05FF_-]+$/, message: 'תווים לא חוקיים' },
-            })}
-          />
-          {errors.username && (
-            <p className="text-xs text-destructive mt-1">{errors.username.message}</p>
-          )}
-        </div>
-
         {/* Email */}
         <div>
           <label htmlFor="signup-email" className="block text-sm font-semibold text-foreground mb-1.5">
             כתובת אימייל
           </label>
           <p className="text-2xs text-muted-foreground mb-1.5">
-            אם נרשמת בעבר, הפרופיל שלך יוטען אוטומטית
+            השתמש באימייל שאיתו נרשמת ל-PT100
           </p>
           <input
             id="signup-email"
@@ -173,10 +203,21 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
           )}
         </div>
 
+        {errorMsg && (
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-xs text-destructive">{errorMsg}</p>
+          </div>
+        )}
+        {successMsg && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-xs text-green-700">{successMsg}</p>
+          </div>
+        )}
+
         {/* Submit */}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || googleLoading}
           className="btn-primary w-full py-3 text-base"
           style={{ minHeight: '48px' }}
         >
@@ -186,7 +227,7 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
               <span>יוצר חשבון...</span>
             </>
           ) : (
-            'הרשמה לעשירייה'
+            'הרשמה ל-PT100'
           )}
         </button>
 
@@ -197,13 +238,6 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
         >
           כבר יש לך חשבון? התחבר
         </button>
-
-        <p className="text-center text-2xs text-muted-foreground">
-          בהרשמה אתה מסכים ל
-          <a href="#" className="text-primary hover:underline mx-1">תנאי השימוש</a>
-          ול
-          <a href="#" className="text-primary hover:underline mx-1">מדיניות הפרטיות</a>
-        </p>
       </div>
     </form>
   );

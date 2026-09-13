@@ -9,9 +9,8 @@ export default function AuthScreen() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row" dir="rtl">
-      {/* Brand panel — left on desktop, top strip on mobile */}
+      {/* Brand panel — left on desktop */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary flex-col items-center justify-center p-12 relative overflow-hidden">
-        {/* Decorative circles */}
         <div className="absolute top-[-80px] right-[-80px] w-64 h-64 rounded-full bg-white/5" />
         <div className="absolute bottom-[-60px] left-[-60px] w-48 h-48 rounded-full bg-white/5" />
         <div className="absolute top-1/2 left-[-40px] w-32 h-32 rounded-full bg-white/5" />
@@ -22,15 +21,15 @@ export default function AuthScreen() {
               <AppLogo size={56} />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-3">מרחב העשירייה</h1>
+          <h1 className="text-3xl font-bold text-white mb-3">PT100</h1>
           <p className="text-white/75 text-base leading-relaxed max-w-xs">
-            הבית הדיגיטלי של העשירייה שלך — שיעורים, תורנויות, ומעקב אישי במקום אחד.
+            המרחב הדיגיטלי של PT100 — שיעורים, תורנויות, ומעקב אישי במקום אחד.
           </p>
 
           <div className="mt-10 space-y-4 text-right">
             {[
               'ראה מה קורה היום בשנייה',
-              'תכנן הגעה בלי לחץ',
+              'תכנון הגעה בלי לחץ',
               'עקוב אחר ההתקדמות שלך',
             ].map((item) => (
               <div key={`feature-${item}`} className="flex items-center gap-3">
@@ -48,8 +47,8 @@ export default function AuthScreen() {
       <div className="lg:hidden bg-primary px-6 py-8 flex items-center gap-4">
         <AppLogo size={40} />
         <div>
-          <h1 className="text-xl font-bold text-white">מרחב העשירייה</h1>
-          <p className="text-white/70 text-xs">הבית הדיגיטלי של העשירייה</p>
+          <h1 className="text-xl font-bold text-white">PT100</h1>
+          <p className="text-white/70 text-xs">המרחב הדיגיטלי שלך</p>
         </div>
       </div>
 
@@ -79,11 +78,11 @@ export default function AuthScreen() {
             <SignupForm onSwitchToLogin={() => setMode('login')} />
           )}
 
-          {/* Profile import notice */}
+          {/* Info notice */}
           <div className="mt-6 p-4 bg-fixed-meeting-bg border border-primary/20 rounded-xl">
-            <p className="text-xs text-primary font-semibold mb-1">פרופיל מוכן מראש</p>
+            <p className="text-xs text-primary font-semibold mb-1">חברי PT100 בלבד</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              אם נרשמת באפליקציה הקודמת, הפרופיל שלך יוטען אוטומטית לפי כתובת האימייל.
+              הגישה מוגבלת לחברי PT100 מאושרים. אם אינך יכול להתחבר, פנה למנהל הקבוצה.
             </p>
           </div>
         </div>
