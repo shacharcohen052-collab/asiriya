@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import AppLogo from '@/components/ui/AppLogo';
-import { Home, Users, CalendarDays, RotateCcw, User, Settings, LogOut, Trophy } from 'lucide-react';
+import { Home, Users, CalendarDays, RotateCcw, User, Settings, LogOut, Trophy, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
@@ -38,7 +38,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activeRoute }: SidebarProps) {
-  const { signOut, profile, user } = useAuth();
+  const { signOut, profile, user, isAdmin } = useAuth();
   const router = useRouter();
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'PT100';
   const initials = displayName.charAt(0).toUpperCase();
@@ -98,6 +98,15 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
             </div>
           </div>
         ))}
+        {isAdmin && (
+          <div>
+            <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest px-3 mb-2">ניהול</p>
+            <Link href="/admin/members" className={`nav-item ${activeRoute === '/admin/members' ? 'active' : ''}`}>
+              <ShieldCheck size={18} className="flex-shrink-0" />
+              <span>ניהול חברים</span>
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* Bottom logout */}

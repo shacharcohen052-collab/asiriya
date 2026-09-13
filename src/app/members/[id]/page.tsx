@@ -3,7 +3,7 @@ import React from 'react';
 import { useParams } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import { MEMBERS, getInitials, getAvatarColor } from '@/data/members';
-import { ArrowRight, Briefcase, Heart, Sparkles, Clock, Zap, Target, Flame } from 'lucide-react';
+import { ArrowRight, Briefcase, Heart, Sparkles, Clock, Zap, Target } from 'lucide-react';
 import Link from 'next/link';
 
 interface QARowProps {
@@ -50,7 +50,7 @@ export default function MemberProfilePage() {
       {/* Back */}
       <Link href="/members" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 transition-colors">
         <ArrowRight size={16} />
-        <span>חברי העשירייה</span>
+        <span>חברי PT100</span>
       </Link>
 
       {/* Profile hero */}
@@ -105,11 +105,6 @@ export default function MemberProfilePage() {
           icon={<Target size={15} />}
           label="מה הייתי רוצה להביא יותר"
           value={member.desiredQuality}
-        />
-        <QARow
-          icon={<Flame size={15} />}
-          label="רעיון ליום גיבוש"
-          value={member.teamDayIdea}
         />
       </div>
     </AppLayout>

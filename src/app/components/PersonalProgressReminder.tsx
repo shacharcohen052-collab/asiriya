@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 // Backend integration point: fetch unreported past events from /api/attendance/unreported?userId=me
 const UNREPORTED_EVENTS = [
-  { id: 'fixed-zoom-morning', title: 'זום עשירייה', time: '11:45', date: '2026-09-12' },
+  { id: 'fixed-zoom-morning', title: 'זום PT100', time: '11:45', date: '2026-09-12' },
 ];
 
 export default function PersonalProgressReminder() {

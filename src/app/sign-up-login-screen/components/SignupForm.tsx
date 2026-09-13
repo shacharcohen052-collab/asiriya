@@ -40,10 +40,13 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      await signUp(data.email, data.password, { fullName: data.fullName });
-      // After signup, check if profile is approved
-      router.push('/');
-      router.refresh();
+      const result = await signUp(data.email, data.password, { fullName: data.fullName });
+      if (result?.session) {
+        router.push('/');
+        router.refresh();
+      } else {
+        setSuccessMsg('ההרשמה נקלטה. בדוק את האימייל לאימות החשבון, ולאחר מכן המתן לאישור מנהל PT100.');
+      }
     } catch (err: any) {
       const msg = err?.message || '';
       if (msg.includes('already registered') || msg.includes('already exists')) {

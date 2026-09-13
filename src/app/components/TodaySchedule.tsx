@@ -7,7 +7,7 @@ import AttendancePlanChips from './AttendancePlanChips';
 const TODAY_EVENTS = [
   {
     id: 'fixed-zoom-morning',
-    title: 'זום עשירייה',
+    title: 'זום PT100',
     startTime: '11:45',
     endTime: '12:00',
     isFixed: true,
@@ -200,7 +200,7 @@ export default function TodaySchedule() {
       {/* Next upcoming */}
       <div className="mt-4 pt-4 border-t border-border">
         <p className="text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">בעוד 23 דקות</span> — זום עשירייה (18:30)
+          <span className="font-semibold text-foreground">בעוד 23 דקות</span> — זום PT100 (18:30)
         </p>
       </div>
     </div>

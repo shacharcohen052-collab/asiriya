@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import '../styles/tailwind.css';
 import { Toaster } from 'sonner';
+import Providers from './providers';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -17,8 +18,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'מרחב העשירייה — הבית הדיגיטלי של העשירייה שלך',
-  description: 'מרחב דיגיטלי חברתי לעשירייה — שיעורים, תורנויות, משימות יומיות ומעקב אישי במקום אחד.',
+  title: 'מרחב PT100 — הבית הדיגיטלי של PT100',
+  description: 'מרחב דיגיטלי חברתי ל-PT100 — שיעורים, תורנויות, משימות יומיות ומעקב אישי במקום אחד.',
   icons: {
     icon: [{ url: '/favicon.ico', type: 'image/x-icon' }],
   },
@@ -30,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className={plusJakartaSans.variable}>
       <body className={plusJakartaSans.className}>
-        {children}
+        <Providers>{children}</Providers>
         <Toaster
           position="bottom-right"
           richColors

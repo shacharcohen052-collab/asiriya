@@ -64,7 +64,7 @@ export default function MembersPage() {
           <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
             <Users size={20} className="text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">חברי העשירייה</h1>
+          <h1 className="text-2xl font-bold text-foreground">חברי PT100</h1>
         </div>
         <p className="text-muted-foreground text-sm mr-12">{MEMBERS.length} חברים</p>
       </div>

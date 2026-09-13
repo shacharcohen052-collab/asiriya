@@ -30,14 +30,14 @@ interface ConflictInfo {
 
 interface AddScheduleModalProps {
   onClose: () => void;
-  onAdd: (events: ScheduleEvent[]) => void;
-  existingEvents: ScheduleEvent[];
+  onAdd?: (events: ScheduleEvent[]) => void;
+  existingEvents?: ScheduleEvent[];
 }
 
 const FIXED_EVENTS: ScheduleEvent[] = [
   {
     id: 'fixed-zoom-morning',
-    title: 'זום עשירייה',
+    title: 'זום PT100',
     date: '',
     dayLabel: '',
     dateLabel: '',
@@ -56,7 +56,7 @@ const FIXED_EVENTS: ScheduleEvent[] = [
   },
   {
     id: 'fixed-zoom-evening',
-    title: 'זום עשירייה',
+    title: 'זום PT100',
     date: '',
     dayLabel: '',
     dateLabel: '',
@@ -133,7 +133,7 @@ function timeToMins(t: string): number {
   return h * 60 + m;
 }
 
-export default function AddScheduleModal({ onClose, onAdd, existingEvents }: AddScheduleModalProps) {
+export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEvents = [] }: AddScheduleModalProps) {
   const [tab, setTab] = useState<'paste' | 'manual'>('paste');
   const [pasteText, setPasteText] = useState('');
   const [parsed, setParsed] = useState<Partial<ScheduleEvent>[]>([]);
@@ -242,7 +242,7 @@ export default function AddScheduleModal({ onClose, onAdd, existingEvents }: Add
                 <p className="font-semibold text-foreground mb-1 flex items-center gap-1">
                   <Star size={12} className="text-primary" /> פגישות קבועות — עדיפות עליונה
                 </p>
-                <p>זום עשירייה (11:45) ופגישות קבועות אחרות יתווספו אוטומטית ויקבלו עדיפות על פני שיעורים מיובאים.</p>
+                <p>זום PT100 (11:45) ופגישות קבועות אחרות יתווספו אוטומטית ויקבלו עדיפות על פני שיעורים מיובאים.</p>
               </div>
               <button onClick={handleParse} className="btn-primary w-full">
                 נתח ותצוגה מקדימה

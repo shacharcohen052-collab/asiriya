@@ -203,7 +203,7 @@ export default function ScorePage() {
                 <span className="font-bold text-foreground">3 נק׳</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>זום עשירייה</span>
+                <span>זום PT100</span>
                 <span className="font-bold text-foreground">לא מזכה</span>
               </div>
             </div>

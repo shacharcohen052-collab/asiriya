@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 // Backend integration point: fetch daily task for today from /api/daily-tasks?date=today
 const MOCK_TASK = {
   id: 'task-2026-09-12',
-  text: 'שלחו לחבר מהעשירייה הודעה טובה לפני השיעור.',
+  text: 'שלחו לחבר מ-PT100 הודעה טובה לפני השיעור.',
   createdBy: 'דניאל',
 };
 
