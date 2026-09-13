@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
 
 interface SignupFormData {
   fullName: string;
@@ -22,9 +23,9 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   const router = useRouter();
   const { signUp, signInWithGoogle } = useAuth();
+  const supabase = createClient();
 
   const {
     register,
@@ -38,12 +39,26 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   const onSubmit = async (data: SignupFormData) => {
     setLoading(true);
     setErrorMsg('');
-    setSuccessMsg('');
     try {
       await signUp(data.email, data.password, { fullName: data.fullName });
-      // After signup, check if profile is approved
-      router.push('/');
-      router.refresh();
+      // Check approval status after signup
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('is_approved')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (profile?.is_approved === true) {
+          router.push('/');
+          router.refresh();
+        } else {
+          router.push('/access-denied');
+        }
+      } else {
+        // Email confirmation may be required — go to access-denied as fallback
+        router.push('/access-denied');
+      }
     } catch (err: any) {
       const msg = err?.message || '';
       if (msg.includes('already registered') || msg.includes('already exists')) {
@@ -120,7 +135,7 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
           <label htmlFor="signup-email" className="block text-sm font-semibold text-foreground mb-1.5">
             כתובת אימייל
           </label>
-          <p className="text-2xs text-muted-foreground mb-1.5">
+          <p className="text-xs text-muted-foreground mb-1.5">
             השתמש באימייל שאיתו נרשמת ל-PT100
           </p>
           <input
@@ -206,11 +221,6 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
         {errorMsg && (
           <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
             <p className="text-xs text-destructive">{errorMsg}</p>
-          </div>
-        )}
-        {successMsg && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-xs text-green-700">{successMsg}</p>
           </div>
         )}
 

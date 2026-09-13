@@ -8,7 +8,6 @@ export interface Member {
   pathDuration: string | null;
   connectionStrength: string | null;
   desiredQuality: string | null;
-  teamDayIdea: string | null;
 }
 
 export const MEMBERS: Member[] = [
@@ -22,7 +21,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "חצי שנה",
     connectionStrength: "המסגרת, לראות אנשים קמים לשיעור בוקר עושה לי רצון להיות חלק",
     desiredQuality: "עשיה מחוץ לקבלה, התכוללות בנינו.",
-    teamDayIdea: "ים."
   },
   {
     profileId: 30001,
@@ -34,7 +32,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "9 שנים בדרך\nמחשבה שהחיים לא נועדו בשביל לאכול, לעבוד, טיפה להנות עם חברים/משפחה לישון וחוזר, חייב להיות משהו מעבר",
     connectionStrength: "גדלות החברה והבורא, חשיבות וכוח להתמיד",
     desiredQuality: "כוונה בעל מנת להשפיע",
-    teamDayIdea: "על האש"
   },
   {
     profileId: 60001,
@@ -46,7 +43,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "בדצמבר הקרוב יהיה לי 3 שנים. אמא שלי לומדת הרבה שנים בדרך. מאז שהייתי קטן שום דבר לא סיפק אותי תמיד חיפשתי משמעות לחיים ולא מצאתי.",
     connectionStrength: "ההתמדה שלהם. החברים נותנים לי ביטחון ברצינות שלהם שחשוב להם המטרה.",
     desiredQuality: "הייתי רוצה לבוא יותר עם לב פתוח. להסיר מגננות לבוא עם הכוונה שאלו הם האחים שלי.",
-    teamDayIdea: "כנראה ללכת לראות סרט ואז לשבת באיזה בר/לעשות טראק כמה ימים עם אוהלים אווירה טובה"
   },
   {
     profileId: 90001,
@@ -58,7 +54,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "לפני שבע שנים נתקלתי במקרה ברב בטלוויזה",
     connectionStrength: "תמיכה",
     desiredQuality: "הייתי רוצה להיות יותר רגיש למצב של החברים שאדע איך ומה לבקש עבורם",
-    teamDayIdea: "יום גיבוש בסגנון של הטיול הקודם היה מאוד מוצלח"
   },
   {
     profileId: 120001,
@@ -70,7 +65,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "ברוטו 26, נטו 4 שנים.\nבאתי לדרך אחרי שעברתי מצבים בצבא",
     connectionStrength: "תפילות, לפעמים באמצע היום אני פשוט מרגיש שמישהו מתפלל עבור העשירייה וזה ישר נותן לי כוח, ממש כמו דומינו.",
     desiredQuality: "יצירת מוזיקה משותפת, מבחינת כוונה יותר הודיה.",
-    teamDayIdea: "קאנטה על נהר הירדן, אוהלים, על האש, מדורה עם שירים, ישיבת חברים"
   },
   {
     profileId: 150001,
@@ -82,7 +76,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "נולדתי לדרך, אבל באמת מגיל 15 אני בזכות עצמי",
     connectionStrength: "כוח, גדלות וחשיבות, ותקווה לזה שאנחנו יכולים להגדיל את הקהילה הענקית שלנו",
     desiredQuality: "גדלות המטרה, תמיכה ודוגמא כמה שיותר",
-    teamDayIdea: "טיול קטן פיזי, ועל אש גדול ושמח לסיום, אם אפשר לתת קפיצה לקבר בעל הסולם או רב״ש"
   },
   {
     profileId: 180001,
@@ -94,7 +87,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "אני בדרך מאז שאני ילד, דרך הוריי שנחשפו לחוכמת הקבלה",
     connectionStrength: "מאוד מתפעל מלראות את החברים מידי יום יושבים בשיעור, דרוכים ובולעים כל מילה של רב",
     desiredQuality: "פתיחות, חיבור, סבלנות",
-    teamDayIdea: "קמפינג, על האש, יום ספורט"
   },
   {
     profileId: 210001,
@@ -106,7 +98,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "אני התחלתי בגיל 24, והייתי הולך לשיעורי בוקר. ביום כיפור האחרון, אישתי אמרה לי לשים מטרות ליום הזה, ומאז הכל השתנה.",
     connectionStrength: null,
     desiredQuality: "יזמות",
-    teamDayIdea: "על האש, בריכה, ספורט"
   },
   {
     profileId: 240001,
@@ -118,7 +109,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "נולדתי בדרך אז בעיקרון כל החיים אבל עכשיו נכנסתי לעשירייה",
     connectionStrength: "מקבל מהם התפעלות גדולה יום יום וקנאה גדולה בחברים הגדולים כמה שהם חזקים ומצליחים להתמיד",
     desiredQuality: "כוונה לשרת את החברים ולחזק את החברים",
-    teamDayIdea: "הייתי מציע יום ספורט ביחד כדורגל או כדורסל, או איזה על האש ביער בן שמן"
   },
   {
     profileId: 270001,
@@ -130,7 +120,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "נולדתי להורים בדרך",
     connectionStrength: "חשיבות וגדלות המטרה",
     desiredQuality: "דאגה עבור החברים",
-    teamDayIdea: "לראות סרט, או לעשות טיול בטבע אבל משהו קל עם מקום להיכנס למים"
   },
   {
     profileId: 300001,
@@ -142,7 +131,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "אני שנה בדרך, בעקבות תחושת ריקנות חזקה לקראת סוף השירות הצבאי",
     connectionStrength: "אני מקבל דוגמא שאליה אני רוצה לשאוף להיות כמו החברים",
     desiredQuality: "השקעה - אני רוצה להשקיע יותר מתנות, מחשבות, רגשות בחברים בתחושה שהם החיים שלי",
-    teamDayIdea: "טיול במדבר עם סיום באילת"
   },
   {
     profileId: 330001,
@@ -154,7 +142,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "17 שנה במצטבר, והגעתי מתוך חיסרון ענק שמלווה אותי מאז שאני זוכר את עצמי",
     connectionStrength: "מקבל מהם נחישות, דוגמא חיובית להתמדה בדרך, ממש עד לדבקות",
     desiredQuality: "יותר סבלנות, ולהיות מסוגל לשייך לבורא כל מצב שמגיע",
-    teamDayIdea: "אני בעד יום ספא כזה, סאונה ובריכות חמות ומסאז אולי, אפשר ללכת בשישי בבוקר לחמי געש"
   },
   {
     profileId: 360001,
@@ -166,7 +153,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "נולדתי בה, הביאו אותי אבי ואמי והקב״ה",
     connectionStrength: "דאגה ע״פ בקורת",
     desiredQuality: "מחויבות עצמית והתחייבות כלפי האחרים",
-    teamDayIdea: "לחיים!"
   },
   {
     profileId: 390001,
@@ -178,7 +164,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "ההורים שלי הגיעו כשהייתי בן 3",
     connectionStrength: "הדוגמה שאני מקבל מכל חבר נותנת כוח אדיר. כל מאמץ הכי קטן של חבר מעורר השראה ונותן כוח",
     desiredQuality: null,
-    teamDayIdea: "פעילות ספורטיבית"
   },
   {
     profileId: 420001,
@@ -190,7 +175,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "בערך חצי שנה פחות או יותר, כל מיני סימנים בדרך שפגשתי שגרמו לי לבדוק על הקבלה",
     connectionStrength: "היחס, האהבה הבלתי פוסקת, הרצון להשפיע, החיבור בנינו מיום ליום גורם לי להתחזק",
     desiredQuality: "הייתי רוצה להביא מעצמי יותר פתיחות ויותר השתתפות בשיעורים ובעשירייה",
-    teamDayIdea: "כמו הטיול יום שעשינו, היה מושלם ואין טעויות"
   },
   {
     profileId: 510001,
@@ -202,7 +186,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "בסביבות 10 שנים בעקבות שהרגשתי ריקנות ענקית כזאת למרות שהייתי מוקף אנשים",
     connectionStrength: "התמדה - אני רואה איך החברים משקיעים מגיעים ולא מוותרים וזה נותן כח לעשות כך גם",
     desiredQuality: "הייתי רוצה להביא יותר חשיבות לדרך ולמטרה שלנו",
-    teamDayIdea: "הייתי מציע שנעשה על האש עם המרצים והמדריכים שלנו באיזה פארק"
   },
   {
     profileId: 540001,
@@ -214,7 +197,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "6 וחצי שנים, אמא שלי היתה לקראת סיום קמפוס א' והציעו לי להצטרף לסוף הקמפוס בחינם.",
     connectionStrength: "האינטנסיביות, והטוטאליות של החברים בדרך מעוררת בי המון קנאה ורצון להשוות צורה לחברים",
     desiredQuality: "הקרבה",
-    teamDayIdea: "טרק בטבע."
   },
   {
     profileId: 630001,
@@ -226,7 +208,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "מהיום שנולדתי - אבא :)",
     connectionStrength: "גדלות המטרה! - מוטיבציה לבוא לשעורים",
     desiredQuality: "נכונות לעשייה רוחנית, להיות בבערה כמוהם",
-    teamDayIdea: "יש לי כלכך הרבה רעיונות שאין פה באמת מספיק מקום לכתוב את כולם"
   },
   {
     profileId: 660001,
@@ -238,7 +219,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "הגעתי דרך ההורים לפני 21 שנה, נשאר כל יום בזכות החברים.",
     connectionStrength: "השקעה מעבר למצופה דוגמה של חברים שמשקיעים מעבר למסגרת שלהם",
     desiredQuality: "באמת להראות אהבה",
-    teamDayIdea: "כל דבר שמאפשר לנו ליצור קשר פנימי יותר עמוק.\n\nסומך עליכם"
   },
   {
     profileId: 690001,
@@ -250,7 +230,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "בדרך 20 שנה, אלה החיים שלי",
     connectionStrength: "תמיד מיזק אותי לראות את החברים בהתלהבות מהדרך",
     desiredQuality: null,
-    teamDayIdea: null
   },
   {
     profileId: 720001,
@@ -262,7 +241,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "3 שנים, גדלתי בדרך אבל מה שהחזיק אותי היה תקופת המלחמה",
     connectionStrength: "שיחות זום היומיות",
     desiredQuality: "התמדה",
-    teamDayIdea: "על האש"
   },
   {
     profileId: 750001,
@@ -274,7 +252,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "מלידה, אבל נכנסתי לפני שנה מרצון עצמאי",
     connectionStrength: "מקבל דוגמה אישית, חשיבות וגדלות המטרה והמון חום ואהבה",
     desiredQuality: "הקשבה, נתינה, קרבה והמון התמדה וסבלנות",
-    teamDayIdea: "כל דבר שיגבש אותנו ויחזק את הקשר בינינו הוא מבורך"
   },
   {
     profileId: 810001,
@@ -286,7 +263,6 @@ export const MEMBERS: Member[] = [
     pathDuration: "נולדתי בדרך, בשיעורים קבוע מ 16.5",
     connectionStrength: "בושה מהחברים, שהם עושים כל כך הרבה.\nשהם באים עם תשוקה פנימית אמיתית, חזקה, pure.",
     desiredQuality: "\"להכניס מרץ בהחברה\"\nשמחה\nדוגמה אישית",
-    teamDayIdea: "ספיד דייט - אחד על אחד ומריצים שאלות, ומתחלפים כל כמה זמן, אני אשמח להכיר אישית לעומק את החברים."
   }
 ];
 

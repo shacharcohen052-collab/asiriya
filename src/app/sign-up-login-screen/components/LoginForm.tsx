@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
 
 interface LoginFormData {
   email: string;
@@ -19,8 +20,13 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
   const router = useRouter();
   const { signIn, signInWithGoogle } = useAuth();
+  const supabase = createClient();
 
   const {
     register,
@@ -35,8 +41,21 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
     setErrorMsg('');
     try {
       await signIn(data.email, data.password);
-      router.push('/');
-      router.refresh();
+      // Check approval status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('is_approved')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (profile?.is_approved === true) {
+          router.push('/');
+          router.refresh();
+        } else {
+          router.push('/access-denied');
+        }
+      }
     } catch (err: any) {
       setErrorMsg(err?.message || 'שגיאה בהתחברות. בדוק את הפרטים ונסה שוב.');
     } finally {
@@ -55,6 +74,66 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
       setGoogleLoading(false);
     }
   };
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail) return;
+    setForgotLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      });
+      if (error) throw error;
+      setForgotSuccess(true);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'שגיאה בשליחת אימייל לאיפוס סיסמה.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  if (forgotMode) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-base font-bold text-foreground mb-1">שחזור סיסמה</h3>
+          <p className="text-sm text-muted-foreground">הזן את האימייל שלך ונשלח לך קישור לאיפוס הסיסמה.</p>
+        </div>
+        {forgotSuccess ? (
+          <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+            <p className="text-sm text-green-700 font-medium">✓ נשלח אימייל לאיפוס סיסמה. בדוק את תיבת הדואר שלך.</p>
+          </div>
+        ) : (
+          <>
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              className="input-field"
+            />
+            {errorMsg && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-xs text-destructive">{errorMsg}</p>
+              </div>
+            )}
+            <button
+              onClick={handleForgotPassword}
+              disabled={forgotLoading || !forgotEmail}
+              className="btn-primary w-full py-3"
+            >
+              {forgotLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'שלח קישור לאיפוס'}
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => { setForgotMode(false); setForgotSuccess(false); setErrorMsg(''); }}
+          className="btn-ghost w-full text-sm"
+        >
+          חזרה להתחברות
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -109,9 +188,18 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
 
         {/* Password */}
         <div>
-          <label htmlFor="login-password" className="block text-sm font-semibold text-foreground mb-1.5">
-            סיסמה
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="login-password" className="block text-sm font-semibold text-foreground">
+              סיסמה
+            </label>
+            <button
+              type="button"
+              onClick={() => setForgotMode(true)}
+              className="text-xs text-primary hover:underline"
+            >
+              שכחת סיסמה?
+            </button>
+          </div>
           <div className="relative">
             <input
               id="login-password"
