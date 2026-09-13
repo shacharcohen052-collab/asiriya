@@ -2,36 +2,49 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { User, Edit3, Save, X, CheckCircle } from 'lucide-react';
-import { MEMBERS, getInitials, getAvatarColor } from '@/data/members';
+import { useAuth } from '@/contexts/AuthContext';
 
-// In production: fetch from user_profiles table using auth.uid()
-const MY_PROFILE = MEMBERS[0]; // shachar cohen
-
+// Profile fields — no team_day_idea per PT100 spec
 interface ProfileField {
-  key: keyof typeof MY_PROFILE;
+  key: string;
   label: string;
   multiline?: boolean;
 }
 
 const FIELDS: ProfileField[] = [
-  { key: 'lifeWork', label: 'עבודה ועיסוק', multiline: true },
-  { key: 'relationshipStatus', label: 'מצב משפחתי' },
+  { key: 'life_work', label: 'עבודה ועיסוק', multiline: true },
+  { key: 'relationship_status', label: 'מצב משפחתי' },
   { key: 'hobbies', label: 'תחביבים ועניינים', multiline: true },
-  { key: 'pathDuration', label: 'כמה זמן בדרך', multiline: true },
-  { key: 'connectionStrength', label: 'מה מחזק אותי בחברים', multiline: true },
-  { key: 'desiredQuality', label: 'מה הייתי רוצה להביא יותר', multiline: true },
-  { key: 'teamDayIdea', label: 'רעיון ליום גיבוש', multiline: true },
+  { key: 'path_duration', label: 'כמה זמן בדרך', multiline: true },
+  { key: 'connection_strength', label: 'מה מחזק אותי בחברים', multiline: true },
+  { key: 'desired_quality', label: 'מה הייתי רוצה להביא יותר', multiline: true },
 ];
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState({ ...MY_PROFILE });
+  const { profile, user } = useAuth();
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [saved, setSaved] = useState(false);
+  const [localProfile, setLocalProfile] = useState<Record<string, string | null>>({});
+
+  // Merge auth profile with local edits
+  const merged: Record<string, string | null> = {
+    life_work: profile?.life_work ?? null,
+    relationship_status: profile?.relationship_status ?? null,
+    hobbies: profile?.hobbies ?? null,
+    path_duration: profile?.path_duration ?? null,
+    connection_strength: profile?.connection_strength ?? null,
+    desired_quality: profile?.desired_quality ?? null,
+    ...localProfile,
+  };
+
+  const displayName = profile?.display_name || user?.email?.split('@')[0] || 'חבר PT100';
+  const email = profile?.email || user?.email || '';
+  const initials = displayName.charAt(0).toUpperCase();
 
   const startEdit = (key: string) => {
     setEditing(key);
-    setDraft((profile as Record<string, string | null>)[key] ?? '');
+    setDraft(merged[key] ?? '');
   };
 
   const cancelEdit = () => {
@@ -40,13 +53,11 @@ export default function ProfilePage() {
   };
 
   const saveEdit = (key: string) => {
-    setProfile((p) => ({ ...p, [key]: draft || null }));
+    setLocalProfile((p) => ({ ...p, [key]: draft || null }));
     setEditing(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
-
-  const avatarIdx = 0;
 
   return (
     <AppLayout activeRoute="/profile">
@@ -57,18 +68,18 @@ export default function ProfilePage() {
           </div>
           <h1 className="text-2xl font-bold text-foreground">פרופיל אישי</h1>
         </div>
-        <p className="text-muted-foreground text-sm mr-12">הפרטים שלך בעשירייה</p>
+        <p className="text-muted-foreground text-sm mr-12">הפרטים שלך ב-PT100</p>
       </div>
 
       <div className="max-w-2xl space-y-5">
         {/* Avatar + name */}
         <div className="bg-card border border-border rounded-xl p-5 card-shadow flex items-center gap-4">
-          <div className={`w-16 h-16 rounded-full ${getAvatarColor(avatarIdx)} flex items-center justify-center text-white text-2xl font-bold flex-shrink-0`}>
-            {getInitials(profile.displayName)}
+          <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold flex-shrink-0">
+            {initials}
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground">{profile.displayName}</h2>
-            <p className="text-sm text-muted-foreground">{profile.email}</p>
+            <h2 className="text-xl font-bold text-foreground">{displayName}</h2>
+            <p className="text-sm text-muted-foreground">{email}</p>
             {saved && (
               <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
                 <CheckCircle size={12} /> נשמר בהצלחה
@@ -84,7 +95,7 @@ export default function ProfilePage() {
           </div>
           <div className="divide-y divide-border">
             {FIELDS.map((field) => {
-              const value = (profile as Record<string, string | null>)[field.key];
+              const value = merged[field.key];
               const isEditing = editing === field.key;
               return (
                 <div key={`field-${field.key}`} className="px-5 py-4">

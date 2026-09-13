@@ -11,37 +11,27 @@ import {
   Settings,
   LogOut,
   Trophy,
-  Upload,
   X,
-  Menu,
+  MoreHorizontal,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 
 
-const navGroups = [
-  {
-    label: 'ראשי',
-    items: [
-      { href: '/', label: 'מסך הבית', icon: Home },
-      { href: '/class-schedule-attendance', label: 'לו"ז ונוכחות', icon: CalendarDays },
-    ],
-  },
-  {
-    label: 'העשירייה',
-    items: [
-      { href: '/members', label: 'חברי העשירייה', icon: Users },
-      { href: '/connection-duties', label: 'סידור תורני חיבור', icon: RotateCcw },
-      { href: '/import-profiles', label: 'ייבוא פרופילים', icon: Upload },
-    ],
-  },
-  {
-    label: 'אישי',
-    items: [
-      { href: '/profile', label: 'פרופיל אישי', icon: User },
-      { href: '/score', label: 'ניקוד ומובילים', icon: Trophy },
-      { href: '/settings', label: 'הגדרות', icon: Settings },
-    ],
-  },
+// Bottom navigation tabs: בית | לו״ז | חברים | תורנים | עוד
+const BOTTOM_TABS = [
+  { href: '/', label: 'בית', icon: Home },
+  { href: '/class-schedule-attendance', label: 'לו״ז', icon: CalendarDays },
+  { href: '/members', label: 'חברים', icon: Users },
+  { href: '/connection-duties', label: 'תורנים', icon: RotateCcw },
+];
+
+// "עוד" drawer items
+const MORE_ITEMS = [
+  { href: '/profile', label: 'פרופיל אישי', icon: User },
+  { href: '/score', label: 'ניקוד', icon: Trophy },
+  { href: '/settings', label: 'הגדרות', icon: Settings },
 ];
 
 interface MobileNavProps {
@@ -49,106 +39,136 @@ interface MobileNavProps {
 }
 
 export default function MobileNav({ activeRoute }: MobileNavProps) {
-  const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const { signOut, profile } = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push('/sign-up-login-screen');
+    } catch {}
+  };
+
+  const displayName = profile?.display_name || 'PT100';
+  const initials = displayName.charAt(0).toUpperCase();
 
   return (
     <>
-      {/* Top bar */}
+      {/* Top bar (mobile only) */}
       <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-card border-b border-border sticky top-0 z-20">
-        <button
-          onClick={() => setOpen(true)}
-          className="p-2 rounded-lg hover:bg-muted transition-colors"
-          aria-label="פתח תפריט"
-        >
-          <Menu size={22} className="text-foreground" />
-        </button>
         <div className="flex items-center gap-2">
           <AppLogo size={28} />
-          <span className="font-bold text-foreground text-base">מרחב העשירייה</span>
+          <span className="font-bold text-foreground text-base">PT100</span>
         </div>
         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
-          ש
+          {initials}
         </div>
       </header>
 
-      {/* Drawer overlay */}
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden fade-in"
-          onClick={() => setOpen(false)}
-        />
-      )}
-
-      {/* Drawer */}
-      <div
-        className={`fixed top-0 right-0 h-full w-72 bg-card z-50 lg:hidden flex flex-col transition-transform duration-300 ease-out ${
-          open ? 'translate-x-0' : 'translate-x-full'
-        }`}
+      {/* Bottom navigation bar (mobile only) */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <AppLogo size={32} />
-            <span className="font-bold text-foreground">מרחב העשירייה</span>
-          </div>
+        <div className="flex items-stretch">
+          {BOTTOM_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeRoute === tab.href;
+            return (
+              <Link
+                key={`bottom-tab-${tab.href}`}
+                href={tab.href}
+                className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 min-h-[56px] transition-colors ${
+                  isActive
+                    ? 'text-primary' :'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+                <span className={`text-2xs font-medium ${isActive ? 'font-semibold' : ''}`}>
+                  {tab.label}
+                </span>
+              </Link>
+            );
+          })}
+
+          {/* עוד tab */}
           <button
-            onClick={() => setOpen(false)}
-            className="p-2 rounded-lg hover:bg-muted transition-colors"
-            aria-label="סגור תפריט"
+            onClick={() => setMoreOpen(true)}
+            className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 min-h-[56px] transition-colors ${
+              moreOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+            }`}
           >
-            <X size={20} className="text-muted-foreground" />
+            <MoreHorizontal size={22} strokeWidth={moreOpen ? 2.5 : 1.8} />
+            <span className="text-2xs font-medium">עוד</span>
           </button>
         </div>
+      </nav>
 
-        <div className="px-4 py-3 border-b border-border">
-          <div className="flex items-center gap-3 p-2 rounded-lg bg-muted">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold flex-shrink-0">
-              ש
+      {/* "עוד" bottom sheet overlay */}
+      {moreOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+            onClick={() => setMoreOpen(false)}
+          />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-2xl lg:hidden"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <span className="font-bold text-foreground">עוד</span>
+              <button
+                onClick={() => setMoreOpen(false)}
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                aria-label="סגור"
+              >
+                <X size={20} className="text-muted-foreground" />
+              </button>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">שחר כהן</p>
-              <p className="text-xs text-muted-foreground">עשירייה ב׳</p>
-            </div>
-          </div>
-        </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-          {navGroups.map((group) => (
-            <div key={`mob-group-${group.label}`}>
-              <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest px-3 mb-2">
-                {group.label}
-              </p>
-              <div className="space-y-0.5">
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeRoute === item.href;
-                  return (
-                    <Link
-                      key={`mob-nav-${item.href}`}
-                      href={item.href}
-                      className={`nav-item ${isActive ? 'active' : ''}`}
-                      onClick={() => setOpen(false)}
-                    >
-                      <Icon size={18} className="flex-shrink-0" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
+            {/* User info */}
+            <div className="px-5 py-3 border-b border-border">
+              <div className="flex items-center gap-3 p-2 rounded-lg bg-muted">
+                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold flex-shrink-0">
+                  {initials}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{displayName}</p>
+                  <p className="text-xs text-muted-foreground">PT100</p>
+                </div>
               </div>
             </div>
-          ))}
-        </nav>
 
-        <div className="px-3 py-4 border-t border-border">
-          <Link
-            href="/sign-up-login-screen"
-            className="nav-item text-destructive hover:bg-red-50"
-            onClick={() => setOpen(false)}
-          >
-            <LogOut size={18} className="flex-shrink-0" />
-            <span>התנתקות</span>
-          </Link>
-        </div>
-      </div>
+            <div className="px-3 py-3 space-y-0.5">
+              {MORE_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeRoute === item.href;
+                return (
+                  <Link
+                    key={`more-item-${item.href}`}
+                    href={item.href}
+                    className={`nav-item ${isActive ? 'active' : ''}`}
+                    onClick={() => setMoreOpen(false)}
+                  >
+                    <Icon size={18} className="flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="px-3 py-3 border-t border-border">
+              <button
+                onClick={handleSignOut}
+                className="nav-item text-destructive hover:bg-red-50 w-full"
+              >
+                <LogOut size={18} className="flex-shrink-0" />
+                <span>התנתקות</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

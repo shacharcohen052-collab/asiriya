@@ -1,10 +1,40 @@
-
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '../lib/supabase/client';
 
-const AuthContext = createContext<any>({});
+interface UserProfile {
+  id: string;
+  email: string;
+  display_name: string;
+  role: 'member' | 'admin';
+  is_approved: boolean;
+  avatar_url: string | null;
+  life_work: string | null;
+  relationship_status: string | null;
+  hobbies: string | null;
+  path_duration: string | null;
+  connection_strength: string | null;
+  desired_quality: string | null;
+}
+
+interface AuthContextType {
+  user: any;
+  session: any;
+  profile: UserProfile | null;
+  loading: boolean;
+  isApproved: boolean;
+  isAdmin: boolean;
+  signUp: (email: string, password: string, metadata?: Record<string, string>) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<any>;
+  signInWithGoogle: () => Promise<any>;
+  signOut: () => Promise<void>;
+  getCurrentUser: () => Promise<any>;
+  getUserProfile: () => Promise<UserProfile | null>;
+  refreshProfile: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -17,96 +47,124 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
+  const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id, email, display_name, role, is_approved, avatar_url, life_work, relationship_status, hobbies, path_duration, connection_strength, desired_quality')
+        .eq('id', userId)
+        .maybeSingle();
+      if (error) return null;
+      return data as UserProfile | null;
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        const p = await fetchProfile(session.user.id);
+        setProfile(p);
+      }
       setLoading(false);
     });
 
-    // Listen for auth changes
     const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        const p = await fetchProfile(session.user.id);
+        setProfile(p);
+      } else {
+        setProfile(null);
+      }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Email/Password Sign Up
-  const signUp = async (email: string, password: string, metadata = {}) => {
+  const signUp = async (email: string, password: string, metadata: Record<string, string> = {}) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          full_name: metadata?.fullName || '',
-          avatar_url: metadata?.avatarUrl || ''
-        },
-        emailRedirectTo: `${window.location.origin}/auth/callback`
-      }
+        data: { full_name: metadata?.fullName || '' },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
     if (error) throw error;
     return data;
   };
 
-  // Email/Password Sign In
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
+  };
+
+  // Google OAuth — uses same email-to-profile matching logic enforced by DB trigger
+  const signInWithGoogle = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      },
     });
     if (error) throw error;
     return data;
   };
 
-  // Sign Out
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    setProfile(null);
   };
 
-  // Get Current User
   const getCurrentUser = async () => {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
     return user;
   };
 
-  // Check if Email is Verified
-  const isEmailVerified = () => {
-    return user?.email_confirmed_at !== null;
-  };
-
-  // Get User Profile from Database
-  const getUserProfile = async () => {
+  const getUserProfile = async (): Promise<UserProfile | null> => {
     if (!user) return null;
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    if (error) throw error;
-    return data;
+    return fetchProfile(user.id);
   };
 
-  const value = {
+  const refreshProfile = async () => {
+    if (!user) return;
+    const p = await fetchProfile(user.id);
+    setProfile(p);
+  };
+
+  const isApproved = profile?.is_approved === true;
+  const isAdmin = profile?.role === 'admin';
+
+  const value: AuthContextType = {
     user,
     session,
+    profile,
     loading,
+    isApproved,
+    isAdmin,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     getCurrentUser,
-    isEmailVerified,
-    getUserProfile
+    getUserProfile,
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
