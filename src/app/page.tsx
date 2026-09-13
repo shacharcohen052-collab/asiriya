@@ -6,12 +6,18 @@ import ConnectionDutyCard from './components/ConnectionDutyCard';
 import TodaySchedule from './components/TodaySchedule';
 import MonthlyLeaderboard from './components/MonthlyLeaderboard';
 import PersonalProgressReminder from './components/PersonalProgressReminder';
+import MonehHaborehPromo from './components/MonehHaborehPromo';
 
 export default function HomePage() {
   return (
     <AppLayout activeRoute="/">
       {/* Greeting */}
       <HomeGreeting />
+
+      {/* External resource promotion */}
+      <div className="mt-4">
+        <MonehHaborehPromo />
+      </div>
 
       {/* Desktop two-column layout */}
       <div className="mt-5 grid grid-cols-1 xl:grid-cols-5 gap-5">
