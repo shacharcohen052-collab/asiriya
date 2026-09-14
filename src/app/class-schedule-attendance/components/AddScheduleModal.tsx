@@ -77,6 +77,13 @@ const FIXED_EVENTS: ScheduleEvent[] = [
 
 const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
+function getWeekDayDate(dayIndex: number) {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() - date.getDay() + dayIndex);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
   const lines = text.split('\n').filter((l) => l.trim());
   const events: Partial<ScheduleEvent>[] = [];
@@ -87,6 +94,8 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
   for (const line of lines) {
     const timeMatch = line.match(timeRegex);
     const dateMatch = line.match(dateRegex);
+    const dayMatch = HEBREW_DAYS.findIndex((day) => new RegExp(`(?:^|\\s)(?:יום\\s+)?${day}(?:\\s|$)`).test(line));
+    if (dayMatch >= 0 && !dateMatch) currentDate = getWeekDayDate(dayMatch);
     if (dateMatch) {
       const yearPart = dateMatch[3] ? (dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3]) : String(new Date().getFullYear());
       currentDate = `${yearPart}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`;
@@ -116,7 +125,13 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
       });
     }
   }
-  return events;
+  const unique = new Set<string>();
+  return events.filter((event) => {
+    const key = `${event.title}|${event.date}|${event.startTime}|${event.endTime}`;
+    if (unique.has(key)) return false;
+    unique.add(key);
+    return true;
+  });
 }
 
 function detectConflicts(incoming: Partial<ScheduleEvent>[], existing: ScheduleEvent[]): ConflictInfo[] {

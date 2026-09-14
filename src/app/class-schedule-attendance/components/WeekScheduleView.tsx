@@ -414,13 +414,13 @@ function groupByDay(events: typeof WEEK_EVENTS) {
   return groups;
 }
 
-export default function WeekScheduleView({ weekOffset = 0, addedEvents = [] }: { weekOffset?: number; addedEvents?: ScheduleEvent[] }) {
-  const [events, setEvents] = useState(() => [...getRelativeWeekEvents(weekOffset), ...addedEvents]);
+export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], showDemoEvents = true }: { weekOffset?: number; addedEvents?: ScheduleEvent[]; showDemoEvents?: boolean }) {
+  const [events, setEvents] = useState(() => [...(showDemoEvents ? getRelativeWeekEvents(weekOffset) : []), ...addedEvents]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'fixed' | 'imported' | 'score'>('all');
 
   useEffect(() => {
-    setEvents([...getRelativeWeekEvents(weekOffset), ...addedEvents]);
-  }, [weekOffset, addedEvents]);
+    setEvents([...(showDemoEvents ? getRelativeWeekEvents(weekOffset) : []), ...addedEvents]);
+  }, [weekOffset, addedEvents, showDemoEvents]);
 
   const filtered = events.filter((e) => {
     if (activeFilter === 'fixed') return e.isFixed;

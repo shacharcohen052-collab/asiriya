@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Plus, ChevronRight, ChevronLeft, Trash2 } from 'lucide-react';
 import AddScheduleModal from './AddScheduleModal';
 import type { ScheduleEvent } from './AddScheduleModal';
 
@@ -8,9 +8,10 @@ interface ScheduleHeaderProps {
   weekOffset: number;
   onWeekOffsetChange: (offset: number) => void;
   onAddEvents: (events: ScheduleEvent[]) => void;
+  onClearSchedule: () => void;
 }
 
-export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEvents }: ScheduleHeaderProps) {
+export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEvents, onClearSchedule }: ScheduleHeaderProps) {
   const [showModal, setShowModal] = useState(false);
 
   const getWeekLabel = (offset: number) => {
@@ -18,6 +19,10 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
     if (offset === 1) return 'השבוע הבא';
     if (offset === -1) return 'השבוע שעבר';
     return offset > 0 ? `בעוד ${offset} שבועות` : `לפני ${Math.abs(offset)} שבועות`;
+  };
+
+  const handleClear = () => {
+    if (window.confirm('למחוק את כל השיעורים והאירועים מהלו״ז?')) onClearSchedule();
   };
 
   return (
@@ -58,6 +63,14 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
           >
             <Plus size={16} />
             הוסף לו&quot;ז שבועי
+          </button>
+          <button
+            onClick={handleClear}
+            className="btn-secondary text-sm py-2 px-3 text-destructive hover:bg-destructive/10"
+            title="מחק את כל הלו״ז"
+          >
+            <Trash2 size={16} />
+            <span className="hidden sm:inline">מחק הכול</span>
           </button>
         </div>
       </div>
