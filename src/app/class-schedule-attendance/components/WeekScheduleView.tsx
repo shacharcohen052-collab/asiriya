@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Star, Clock, Users, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -178,6 +178,48 @@ const PLANNERS_MOCK = [
   { id: 'user-005', name: 'יוסי מזרחי', plan: 'physical' },
   { id: 'user-006', name: 'איתי שפירא', plan: 'with_help' },
 ];
+
+const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+function dateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentWeekStart(offset: number) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  today.setDate(today.getDate() - today.getDay() + offset * 7);
+  return today;
+}
+
+function getRelativeWeekEvents(offset: number) {
+  const baseSunday = new Date(2026, 8, 13);
+  const targetSunday = getCurrentWeekStart(offset);
+  const today = new Date();
+  const todayKey = dateKey(today);
+
+  return WEEK_EVENTS.map((event) => {
+    const baseDate = new Date(`${event.date}T12:00:00`);
+    const dayOffset = Math.round((baseDate.getTime() - baseSunday.getTime()) / 86400000);
+    const nextDate = new Date(targetSunday);
+    nextDate.setDate(targetSunday.getDate() + dayOffset);
+    const key = dateKey(nextDate);
+    const endMinutes = Number(event.endTime.split(':')[0]) * 60 + Number(event.endTime.split(':')[1]);
+    const nowMinutes = today.getHours() * 60 + today.getMinutes();
+    const isPast = key < todayKey || (key === todayKey && endMinutes <= nowMinutes);
+
+    return {
+      ...event,
+      date: key,
+      dayLabel: HEBREW_DAYS[nextDate.getDay()],
+      dateLabel: `${String(nextDate.getDate()).padStart(2, '0')}/${String(nextDate.getMonth() + 1).padStart(2, '0')}`,
+      isPast,
+    };
+  });
+}
 
 interface EventCardProps {
   event: (typeof WEEK_EVENTS)[0];
@@ -371,9 +413,13 @@ function groupByDay(events: typeof WEEK_EVENTS) {
   return groups;
 }
 
-export default function WeekScheduleView() {
-  const [events, setEvents] = useState(WEEK_EVENTS);
+export default function WeekScheduleView({ weekOffset = 0 }: { weekOffset?: number }) {
+  const [events, setEvents] = useState(() => getRelativeWeekEvents(weekOffset));
   const [activeFilter, setActiveFilter] = useState<'all' | 'fixed' | 'imported' | 'score'>('all');
+
+  useEffect(() => {
+    setEvents(getRelativeWeekEvents(weekOffset));
+  }, [weekOffset]);
 
   const filtered = events.filter((e) => {
     if (activeFilter === 'fixed') return e.isFixed;
@@ -428,7 +474,7 @@ export default function WeekScheduleView() {
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([date, dayEvents]) => {
             const first = dayEvents[0];
-            const isToday = date === '2026-09-12';
+            const isToday = date === dateKey(new Date());
             return (
               <div key={`day-group-${date}`}>
                 <div className={`flex items-center gap-3 mb-2 ${isToday ? '' : ''}`}>

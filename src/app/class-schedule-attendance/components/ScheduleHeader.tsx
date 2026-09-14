@@ -3,9 +3,13 @@ import React, { useState } from 'react';
 import { Plus, ChevronRight, ChevronLeft } from 'lucide-react';
 import AddScheduleModal from './AddScheduleModal';
 
-export default function ScheduleHeader() {
+interface ScheduleHeaderProps {
+  weekOffset: number;
+  onWeekOffsetChange: (offset: number) => void;
+}
+
+export default function ScheduleHeader({ weekOffset, onWeekOffsetChange }: ScheduleHeaderProps) {
   const [showModal, setShowModal] = useState(false);
-  const [weekOffset, setWeekOffset] = useState(0);
 
   const getWeekLabel = (offset: number) => {
     if (offset === 0) return 'השבוע הנוכחי';
@@ -28,7 +32,7 @@ export default function ScheduleHeader() {
           {/* Week navigation */}
           <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1">
             <button
-              onClick={() => setWeekOffset((p) => p - 1)}
+              onClick={() => onWeekOffsetChange(weekOffset - 1)}
               className="p-1.5 rounded-lg hover:bg-muted transition-colors"
               aria-label="שבוע קודם"
             >
@@ -38,7 +42,7 @@ export default function ScheduleHeader() {
               {getWeekLabel(weekOffset)}
             </span>
             <button
-              onClick={() => setWeekOffset((p) => p + 1)}
+              onClick={() => onWeekOffsetChange(weekOffset + 1)}
               className="p-1.5 rounded-lg hover:bg-muted transition-colors"
               aria-label="שבוע הבא"
             >

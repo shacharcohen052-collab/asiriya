@@ -91,7 +91,9 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
         title: title || 'שיעור',
         startTime: timeMatch[1],
         endTime: timeMatch[2],
-        date: dateMatch ? `2026-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}` : '',
+        date: dateMatch
+          ? `${new Date().getFullYear()}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`
+          : '',
         dayLabel: '',
         dateLabel: dateMatch ? `${dateMatch[1]}/${dateMatch[2]}` : '',
         isFixed: false,
@@ -182,7 +184,7 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
       scoreValue: manualScore ? 2 : 0,
       planningCount: 0,
       myPlan: null,
-      isPast: false,
+      isPast: new Date(`${manualDate}T${manualEnd}`) <= new Date(),
       myActualAttendance: null,
       isSynced: false,
     };
