@@ -86,7 +86,7 @@ function createFixedEvents(dates: string[]): ScheduleEvent[] {
     const day = new Date(`${date}T12:00:00`).getDay();
     const dayName = HEBREW_DAYS[day];
     const dateLabel = `${date.slice(8, 10)}/${date.slice(5, 7)}`;
-    const base = (id: string, title: string, startTime: string, endTime: string, countsForScore = false): ScheduleEvent => ({
+    const base = (id: string, title: string, startTime: string, endTime: string, countsForScore = true): ScheduleEvent => ({
       id: `${id}-${date}`,
       title,
       date,
