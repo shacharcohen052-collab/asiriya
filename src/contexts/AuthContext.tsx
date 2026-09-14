@@ -27,6 +27,8 @@ interface AuthContextType {
   isAdmin: boolean;
   signUp: (email: string, password: string, metadata?: Record<string, string>) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   signInWithGoogle: () => Promise<any>;
   signOut: () => Promise<void>;
   getCurrentUser: () => Promise<any>;
@@ -113,6 +115,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return data;
   };
 
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
+  };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  };
+
   // Google OAuth — uses same email-to-profile matching logic enforced by DB trigger
   const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -128,8 +142,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    setSession(null);
+    setUser(null);
     setProfile(null);
+    if (error) throw error;
   };
 
   const getCurrentUser = async () => {
@@ -161,6 +177,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isAdmin,
     signUp,
     signIn,
+    resetPassword,
+    updatePassword,
     signInWithGoogle,
     signOut,
     getCurrentUser,

@@ -152,6 +152,7 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
       const startTime = timeMatch[1].replace('.', ':');
       const endTime = timeMatch[2].replace('.', ':');
       const title = line.replace(timeRegex, '').replace(dateRegex, '').trim().replace(/^[-–: ,\s]+/, '').trim();
+      if (/הכנה\s+לשיעור/i.test(title)) continue;
       events.push({
         id: `imported-${Date.now()}-${Math.random()}`,
         title: title || 'שיעור',
@@ -228,7 +229,14 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
     }
     // Add the fixed daily meetings for every imported date.
     const dates = [...new Set(events.map((event) => event.date).filter(Boolean))] as string[];
-    const allIncoming = [...createFixedEvents(dates), ...events];
+    const fixedEvents = createFixedEvents(dates);
+    const acceptedEvents = events.filter((event) => {
+      if (!event.date || !event.startTime || !event.endTime) return true;
+      const start = timeToMins(event.startTime);
+      const end = timeToMins(event.endTime);
+      return !fixedEvents.some((fixed) => fixed.date === event.date && start < timeToMins(fixed.endTime) && end > timeToMins(fixed.startTime));
+    });
+    const allIncoming = [...fixedEvents, ...acceptedEvents];
     const detectedConflicts = detectConflicts(events, existingEvents.filter((e) => e.isFixed));
     setParsed(allIncoming);
     setConflicts(detectedConflicts);

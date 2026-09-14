@@ -19,13 +19,16 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   const router = useRouter();
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, resetPassword } = useAuth();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    getValues,
   } = useForm<LoginFormData>({
     defaultValues: { email: '', password: '' },
   });
@@ -53,6 +56,24 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
     } catch (err: any) {
       setErrorMsg(err?.message || 'שגיאה בהתחברות עם Google.');
       setGoogleLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const email = getValues('email');
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      setErrorMsg('הזן כתובת אימייל תקינה כדי לקבל קישור לאיפוס סיסמה.');
+      return;
+    }
+    setResetLoading(true);
+    setErrorMsg('');
+    try {
+      await resetPassword(email);
+      setResetSuccess(true);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'לא ניתן לשלוח קישור איפוס. נסה שוב.');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -144,6 +165,15 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
             <p className="text-xs text-destructive">{errorMsg}</p>
           </div>
         )}
+        {resetSuccess && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-xs text-green-700">קישור לאיפוס סיסמה נשלח לאימייל. בדוק גם בתיקיית הספאם.</p>
+          </div>
+        )}
+
+        <button type="button" onClick={handleResetPassword} disabled={resetLoading || loading || googleLoading} className="w-full text-center text-xs text-primary hover:underline">
+          {resetLoading ? 'שולח קישור...' : 'שכחתי סיסמה'}
+        </button>
 
         {/* Submit */}
         <button

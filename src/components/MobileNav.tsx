@@ -47,8 +47,12 @@ export default function MobileNav({ activeRoute }: MobileNavProps) {
   const handleSignOut = async () => {
     try {
       await signOut();
-      router.push('/sign-up-login-screen');
-    } catch {}
+    } catch {
+      // The local session is cleared even if the remote sign-out request fails.
+    } finally {
+      router.replace('/sign-up-login-screen');
+      router.refresh();
+    }
   };
 
   return (

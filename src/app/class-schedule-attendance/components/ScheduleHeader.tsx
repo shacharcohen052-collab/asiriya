@@ -9,9 +9,10 @@ interface ScheduleHeaderProps {
   onWeekOffsetChange: (offset: number) => void;
   onAddEvents: (events: ScheduleEvent[]) => void;
   onClearSchedule: () => void;
+  isAdmin: boolean;
 }
 
-export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEvents, onClearSchedule }: ScheduleHeaderProps) {
+export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEvents, onClearSchedule, isAdmin }: ScheduleHeaderProps) {
   const [showModal, setShowModal] = useState(false);
 
   const getWeekLabel = (offset: number) => {
@@ -64,14 +65,16 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
             <Plus size={16} />
             הוסף לו&quot;ז שבועי
           </button>
-          <button
-            onClick={handleClear}
-            className="btn-secondary text-sm py-2 px-3 text-destructive hover:bg-destructive/10"
-            title="מחק את כל הלו״ז"
-          >
-            <Trash2 size={16} />
-            <span className="hidden sm:inline">מחק הכול</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleClear}
+              className="btn-secondary text-sm py-2 px-3 text-destructive hover:bg-destructive/10"
+              title="מחק את כל הלו״ז"
+            >
+              <Trash2 size={16} />
+              <span className="hidden sm:inline">מחק הכול</span>
+            </button>
+          )}
         </div>
       </div>
 

@@ -6,12 +6,14 @@ import ScheduleHeader from './components/ScheduleHeader';
 import WeekScheduleView from './components/WeekScheduleView';
 import CalendarSyncSection from './components/CalendarSyncSection';
 import type { ScheduleEvent } from './components/AddScheduleModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ClassScheduleAttendancePage() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [addedEvents, setAddedEvents] = useState<ScheduleEvent[]>([]);
   const [showDemoEvents, setShowDemoEvents] = useState(true);
   const [storageLoaded, setStorageLoaded] = useState(false);
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
     try {
@@ -37,19 +39,33 @@ export default function ClassScheduleAttendancePage() {
     setShowDemoEvents(false);
     setAddedEvents((prev) => {
       const seen = new Set(prev.map((event) => `${event.title}|${event.date}|${event.startTime}|${event.endTime}`));
-      return [...prev, ...newEvents.filter((event) => {
+      const combined = [...prev, ...newEvents.filter((event) => {
         const key = `${event.title}|${event.date}|${event.startTime}|${event.endTime}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       })];
+      const fixed = combined.filter((event) => event.isFixed);
+      return combined.filter((event) => {
+        if (event.isFixed || !event.date) return true;
+        const start = event.startTime.split(':').map(Number);
+        const end = event.endTime.split(':').map(Number);
+        const startMinutes = start[0] * 60 + start[1];
+        const endMinutes = end[0] * 60 + end[1];
+        return !fixed.some((other) => {
+          if (other.date !== event.date) return false;
+          const otherStart = other.startTime.split(':').map(Number);
+          const otherEnd = other.endTime.split(':').map(Number);
+          return startMinutes < otherEnd[0] * 60 + otherEnd[1] && endMinutes > otherStart[0] * 60 + otherStart[1];
+        });
+      });
     });
   };
 
   return (
     <AppLayout activeRoute="/class-schedule-attendance">
       <div className="space-y-6">
-        <ScheduleHeader weekOffset={weekOffset} onWeekOffsetChange={setWeekOffset} onAddEvents={addEventsWithoutDuplicates} onClearSchedule={() => { setAddedEvents([]); setShowDemoEvents(false); }} />
+        <ScheduleHeader weekOffset={weekOffset} onWeekOffsetChange={setWeekOffset} onAddEvents={addEventsWithoutDuplicates} isAdmin={isAdmin} onClearSchedule={() => { if (!isAdmin) return; setAddedEvents([]); setShowDemoEvents(false); }} />
         <WeekScheduleView weekOffset={weekOffset} addedEvents={addedEvents} showDemoEvents={showDemoEvents} />
         <CalendarSyncSection />
       </div>

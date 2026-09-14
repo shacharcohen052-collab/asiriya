@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Star, Clock, Users, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
+import { Clock, Users, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ScheduleEvent } from './AddScheduleModal';
 
@@ -214,6 +214,7 @@ function getRelativeWeekEvents(offset: number) {
 
     return {
       ...event,
+      countsForScore: true,
       date: key,
       dayLabel: HEBREW_DAYS[nextDate.getDay()],
       dateLabel: `${String(nextDate.getDate()).padStart(2, '0')}/${String(nextDate.getMonth() + 1).padStart(2, '0')}`,
@@ -258,22 +259,6 @@ function EventCard({ event, onPlanChange, onAttendanceReport }: EventCardProps) 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="text-sm font-semibold text-foreground">{event.title}</span>
-            {event.isFixed && (
-              <span className="fixed-meeting-badge text-2xs font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                <Star size={9} />
-                קבוע
-              </span>
-            )}
-            {!event.isFixed && (
-              <span className="imported-badge text-2xs font-semibold px-1.5 py-0.5 rounded-full">
-                מיובא
-              </span>
-            )}
-            {event.countsForScore && (
-              <span className="text-2xs bg-amber-50 text-amber-700 font-semibold px-1.5 py-0.5 rounded-full">
-                ניקוד
-              </span>
-            )}
             {event.isSynced && (
               <span className="text-2xs bg-green-50 text-green-700 font-semibold px-1.5 py-0.5 rounded-full">
                 ✓ מסונכרן
