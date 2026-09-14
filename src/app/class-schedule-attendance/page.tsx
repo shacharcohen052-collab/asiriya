@@ -1,72 +1,144 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import ScheduleHeader from './components/ScheduleHeader';
 import WeekScheduleView from './components/WeekScheduleView';
 import CalendarSyncSection from './components/CalendarSyncSection';
 import type { ScheduleEvent } from './components/AddScheduleModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
+
+const supabase = createClient();
+
+function formatDate(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function getWeekRange(offset: number) {
+  const start = new Date();
+  start.setHours(12, 0, 0, 0);
+  start.setDate(start.getDate() - start.getDay() + offset * 7);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { start: formatDate(start), end: formatDate(end) };
+}
+
+function mapRow(row: any): ScheduleEvent {
+  const date = row.event_date as string;
+  const dateObject = new Date(`${date}T12:00:00`);
+  const endTime = String(row.end_time).slice(0, 5);
+  return {
+    id: row.id,
+    title: row.title,
+    date,
+    dayLabel: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'][dateObject.getDay()],
+    dateLabel: `${date.slice(8, 10)}/${date.slice(5, 7)}`,
+    startTime: String(row.start_time).slice(0, 5),
+    endTime,
+    isFixed: Boolean(row.is_fixed),
+    source: row.source,
+    allowsAttendancePlan: row.allows_attendance_plan !== false,
+    countsForScore: true,
+    scoreValue: 1,
+    planningCount: 0,
+    myPlan: null,
+    isPast: new Date(`${date}T${endTime}`) <= new Date(),
+    myActualAttendance: null,
+    isSynced: false,
+  };
+}
 
 export default function ClassScheduleAttendancePage() {
   const [weekOffset, setWeekOffset] = useState(0);
-  const [addedEvents, setAddedEvents] = useState<ScheduleEvent[]>([]);
-  const [showDemoEvents, setShowDemoEvents] = useState(true);
-  const [storageLoaded, setStorageLoaded] = useState(false);
-  const { isAdmin } = useAuth();
+  const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { isAdmin, isApproved, profile } = useAuth();
 
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem('pt100-schedule-v2');
-      if (saved) {
-        const data = JSON.parse(saved) as { events?: ScheduleEvent[]; showDemoEvents?: boolean };
-        setAddedEvents(Array.isArray(data.events) ? data.events : []);
-        setShowDemoEvents(data.showDemoEvents !== false);
-      }
-    } catch {
-      // Ignore malformed local data and start with a clean schedule.
-    } finally {
-      setStorageLoaded(true);
+  const loadSchedule = useCallback(async () => {
+    if (!isApproved) {
+      setLoading(false);
+      return;
     }
-  }, []);
+    setLoading(true);
+    const range = getWeekRange(weekOffset);
+    const { error: fixedError } = await supabase.rpc('ensure_pt100_fixed_schedule', {
+      p_start_date: range.start,
+      p_end_date: range.end,
+    });
+    if (fixedError) console.warn('Could not ensure recurring schedule', fixedError.message);
+
+    const { data, error } = await supabase
+      .from('schedule_events')
+      .select('id,title,event_date,start_time,end_time,is_fixed,source,allows_attendance_plan')
+      .eq('is_active', true)
+      .gte('event_date', range.start)
+      .lte('event_date', range.end)
+      .order('event_date')
+      .order('start_time');
+
+    if (error) toast.error('לא ניתן לטעון את הלו״ז כרגע');
+    else setEvents((data ?? []).map(mapRow));
+    setLoading(false);
+  }, [isApproved, weekOffset]);
 
   useEffect(() => {
-    if (!storageLoaded) return;
-    window.localStorage.setItem('pt100-schedule-v2', JSON.stringify({ events: addedEvents, showDemoEvents }));
-  }, [addedEvents, showDemoEvents, storageLoaded]);
+    void loadSchedule();
+  }, [loadSchedule]);
 
-  const addEventsWithoutDuplicates = (newEvents: ScheduleEvent[]) => {
-    setShowDemoEvents(false);
-    setAddedEvents((prev) => {
-      const seen = new Set(prev.map((event) => `${event.title}|${event.date}|${event.startTime}|${event.endTime}`));
-      const combined = [...prev, ...newEvents.filter((event) => {
-        const key = `${event.title}|${event.date}|${event.startTime}|${event.endTime}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })];
-      const fixed = combined.filter((event) => event.isFixed);
-      return combined.filter((event) => {
-        if (event.isFixed || !event.date) return true;
-        const start = event.startTime.split(':').map(Number);
-        const end = event.endTime.split(':').map(Number);
-        const startMinutes = start[0] * 60 + start[1];
-        const endMinutes = end[0] * 60 + end[1];
-        return !fixed.some((other) => {
-          if (other.date !== event.date) return false;
-          const otherStart = other.startTime.split(':').map(Number);
-          const otherEnd = other.endTime.split(':').map(Number);
-          return startMinutes < otherEnd[0] * 60 + otherEnd[1] && endMinutes > otherStart[0] * 60 + otherStart[1];
-        });
-      });
-    });
+  const addEvents = async (newEvents: ScheduleEvent[]) => {
+    if (!profile?.id || !newEvents.length) return;
+    const rows = newEvents
+      .filter((event) => event.date && !event.isFixed)
+      .map((event) => ({
+        title: event.title.trim(),
+        event_date: event.date,
+        start_time: event.startTime,
+        end_time: event.endTime,
+        is_fixed: false,
+        source: 'weekly_paste',
+        allows_attendance_plan: true,
+        counts_for_score: true,
+        score_value: 1,
+        created_by: profile.id,
+        is_active: true,
+        dedupe_key: `${event.title.trim().toLocaleLowerCase()}|${event.date}|${event.startTime}:00|${event.endTime}:00`,
+      }));
+    if (!rows.length) return;
+    const { error } = await supabase.from('schedule_events').upsert(rows, { onConflict: 'dedupe_key', ignoreDuplicates: true });
+    if (error) {
+      toast.error('שמירת הלו״ז נכשלה');
+      return;
+    }
+    toast.success('הלו״ז נשמר ב־Supabase');
+    await loadSchedule();
+  };
+
+  const clearSchedule = async () => {
+    const { error } = await supabase.rpc('clear_pt100_schedule');
+    if (error) toast.error('מחיקת הלו״ז נכשלה');
+    else {
+      toast.success('הלו״ז הוסר');
+      setEvents([]);
+    }
   };
 
   return (
     <AppLayout activeRoute="/class-schedule-attendance">
       <div className="space-y-6">
-        <ScheduleHeader weekOffset={weekOffset} onWeekOffsetChange={setWeekOffset} onAddEvents={addEventsWithoutDuplicates} isAdmin={isAdmin} onClearSchedule={() => { if (!isAdmin) return; setAddedEvents([]); setShowDemoEvents(false); }} />
-        <WeekScheduleView weekOffset={weekOffset} addedEvents={addedEvents} showDemoEvents={showDemoEvents} />
+        <ScheduleHeader
+          weekOffset={weekOffset}
+          onWeekOffsetChange={setWeekOffset}
+          onAddEvents={addEvents}
+          isAdmin={isAdmin}
+          onClearSchedule={clearSchedule}
+        />
+        {loading ? (
+          <div className="bg-card border border-border rounded-xl p-8 text-center text-sm text-muted-foreground">טוען את הלו״ז…</div>
+        ) : (
+          <WeekScheduleView weekOffset={weekOffset} addedEvents={events} showDemoEvents={false} />
+        )}
         <CalendarSyncSection />
       </div>
     </AppLayout>
