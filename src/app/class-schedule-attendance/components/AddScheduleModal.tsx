@@ -76,6 +76,44 @@ const FIXED_EVENTS: ScheduleEvent[] = [
 ];
 
 const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+const HEBREW_MONTHS: Record<string, number> = {
+  ינואר: 1, פברואר: 2, מרץ: 3, אפריל: 4, מאי: 5, יוני: 6,
+  יולי: 7, אוגוסט: 8, ספטמבר: 9, אוקטובר: 10, נובמבר: 11, דצמבר: 12,
+};
+
+function createFixedEvents(dates: string[]): ScheduleEvent[] {
+  return dates.flatMap((date) => {
+    const day = new Date(`${date}T12:00:00`).getDay();
+    const dayName = HEBREW_DAYS[day];
+    const dateLabel = `${date.slice(8, 10)}/${date.slice(5, 7)}`;
+    const base = (id: string, title: string, startTime: string, endTime: string, countsForScore = false): ScheduleEvent => ({
+      id: `${id}-${date}`,
+      title,
+      date,
+      dayLabel: dayName,
+      dateLabel,
+      startTime,
+      endTime,
+      isFixed: true,
+      source: 'fixed_schedule',
+      allowsAttendancePlan: true,
+      countsForScore,
+      scoreValue: countsForScore ? 2 : 0,
+      planningCount: 0,
+      myPlan: null,
+      isPast: false,
+      myActualAttendance: null,
+      isSynced: false,
+    });
+    const fixed = [
+      base('fixed-zoom-morning', 'זום PT100', '11:45', '12:00'),
+      base('fixed-zoom-evening', 'זום PT100', '18:00', '18:30'),
+    ];
+    if (day === 1) fixed.push(base('fixed-community-monday', 'לימוד בקהילת הצעירים', '18:30', '21:00', true));
+    if (day === 4) fixed.push(base('fixed-community-thursday', 'ערב גיבוש לקהילת הצעירים', '18:30', '21:00', true));
+    return fixed;
+  });
+}
 
 function getWeekDayDate(dayIndex: number) {
   const date = new Date();
@@ -94,8 +132,18 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
   for (const line of lines) {
     const timeMatch = line.match(timeRegex);
     const dateMatch = line.match(dateRegex);
-    const dayMatch = HEBREW_DAYS.findIndex((day) => new RegExp(`(?:^|\\s)(?:יום\\s+)?${day}(?:\\s|$)`).test(line));
-    if (dayMatch >= 0 && !dateMatch) currentDate = getWeekDayDate(dayMatch);
+    const hebrewHeader = line.match(/(?:יום\s+)?(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)\s*,?\s*(\d{1,2})\s+([א-ת]+)/);
+    const dayMatch = HEBREW_DAYS.findIndex((day) => new RegExp(`(?:^|\\s)(?:יום\\s+)?${day}(?:[\\s,]|$)`).test(line));
+    if (hebrewHeader) {
+      const month = HEBREW_MONTHS[hebrewHeader[3]];
+      if (month) {
+        currentDate = `${new Date().getFullYear()}-${String(month).padStart(2, '0')}-${hebrewHeader[2].padStart(2, '0')}`;
+      } else if (dayMatch >= 0) {
+        currentDate = getWeekDayDate(dayMatch);
+      }
+    } else if (dayMatch >= 0 && !dateMatch) {
+      currentDate = getWeekDayDate(dayMatch);
+    }
     if (dateMatch) {
       const yearPart = dateMatch[3] ? (dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3]) : String(new Date().getFullYear());
       currentDate = `${yearPart}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`;
@@ -178,8 +226,9 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
       toast.error('לא נמצאו אירועים. ודא שיש שעות בפורמט HH:MM - HH:MM');
       return;
     }
-    // Fixed events always take priority — add them first
-    const allIncoming = [...FIXED_EVENTS.map((f) => ({ ...f, id: `${f.id}-${Date.now()}` })), ...events];
+    // Add the fixed daily meetings for every imported date.
+    const dates = [...new Set(events.map((event) => event.date).filter(Boolean))] as string[];
+    const allIncoming = [...createFixedEvents(dates), ...events];
     const detectedConflicts = detectConflicts(events, existingEvents.filter((e) => e.isFixed));
     setParsed(allIncoming);
     setConflicts(detectedConflicts);
