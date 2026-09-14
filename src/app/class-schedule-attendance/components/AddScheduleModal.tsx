@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { CalendarDays, Plus, X, AlertTriangle, Star, Clock, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface ScheduleEvent {
+export interface ScheduleEvent {
   id: string;
   title: string;
   date: string;
@@ -75,27 +75,34 @@ const FIXED_EVENTS: ScheduleEvent[] = [
   },
 ];
 
+const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
 function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
   const lines = text.split('\n').filter((l) => l.trim());
   const events: Partial<ScheduleEvent>[] = [];
-  const timeRegex = /(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/;
-  const dateRegex = /(\d{1,2})[\/\-\.](\d{1,2})/;
+  const timeRegex = /(\d{1,2}[:.]\d{2})\s*(?:[-–—]|עד|to)\s*(\d{1,2}[:.]\d{2})/i;
+  const dateRegex = /(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?/;
+  let currentDate = '';
 
   for (const line of lines) {
     const timeMatch = line.match(timeRegex);
     const dateMatch = line.match(dateRegex);
+    if (dateMatch) {
+      const yearPart = dateMatch[3] ? (dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3]) : String(new Date().getFullYear());
+      currentDate = `${yearPart}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`;
+    }
     if (timeMatch) {
-      const title = line.replace(timeRegex, '').replace(dateRegex, '').trim().replace(/^[-–:,\s]+/, '').trim();
+      const startTime = timeMatch[1].replace('.', ':');
+      const endTime = timeMatch[2].replace('.', ':');
+      const title = line.replace(timeRegex, '').replace(dateRegex, '').trim().replace(/^[-–: ,\s]+/, '').trim();
       events.push({
         id: `imported-${Date.now()}-${Math.random()}`,
         title: title || 'שיעור',
-        startTime: timeMatch[1],
-        endTime: timeMatch[2],
-        date: dateMatch
-          ? `${new Date().getFullYear()}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`
-          : '',
-        dayLabel: '',
-        dateLabel: dateMatch ? `${dateMatch[1]}/${dateMatch[2]}` : '',
+        startTime,
+        endTime,
+        date: currentDate,
+        dayLabel: currentDate ? HEBREW_DAYS[new Date(`${currentDate}T12:00:00`).getDay()] : '',
+        dateLabel: currentDate ? `${currentDate.slice(8, 10)}/${currentDate.slice(5, 7)}` : '',
         isFixed: false,
         source: 'weekly_paste',
         allowsAttendancePlan: true,

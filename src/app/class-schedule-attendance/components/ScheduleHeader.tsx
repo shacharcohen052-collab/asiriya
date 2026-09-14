@@ -2,13 +2,15 @@
 import React, { useState } from 'react';
 import { Plus, ChevronRight, ChevronLeft } from 'lucide-react';
 import AddScheduleModal from './AddScheduleModal';
+import type { ScheduleEvent } from './AddScheduleModal';
 
 interface ScheduleHeaderProps {
   weekOffset: number;
   onWeekOffsetChange: (offset: number) => void;
+  onAddEvents: (events: ScheduleEvent[]) => void;
 }
 
-export default function ScheduleHeader({ weekOffset, onWeekOffsetChange }: ScheduleHeaderProps) {
+export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEvents }: ScheduleHeaderProps) {
   const [showModal, setShowModal] = useState(false);
 
   const getWeekLabel = (offset: number) => {
@@ -60,7 +62,7 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange }: Sched
         </div>
       </div>
 
-      {showModal && <AddScheduleModal onClose={() => setShowModal(false)} />}
+      {showModal && <AddScheduleModal onClose={() => setShowModal(false)} onAdd={onAddEvents} />}
     </>
   );
 }

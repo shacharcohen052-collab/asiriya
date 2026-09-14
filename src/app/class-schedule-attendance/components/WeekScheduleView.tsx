@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Star, Clock, Users, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
+import type { ScheduleEvent } from './AddScheduleModal';
 
 // Backend integration point: fetch week events from /api/events?weekOffset=0
 const WEEK_EVENTS = [
@@ -413,13 +414,13 @@ function groupByDay(events: typeof WEEK_EVENTS) {
   return groups;
 }
 
-export default function WeekScheduleView({ weekOffset = 0 }: { weekOffset?: number }) {
-  const [events, setEvents] = useState(() => getRelativeWeekEvents(weekOffset));
+export default function WeekScheduleView({ weekOffset = 0, addedEvents = [] }: { weekOffset?: number; addedEvents?: ScheduleEvent[] }) {
+  const [events, setEvents] = useState(() => [...getRelativeWeekEvents(weekOffset), ...addedEvents]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'fixed' | 'imported' | 'score'>('all');
 
   useEffect(() => {
-    setEvents(getRelativeWeekEvents(weekOffset));
-  }, [weekOffset]);
+    setEvents([...getRelativeWeekEvents(weekOffset), ...addedEvents]);
+  }, [weekOffset, addedEvents]);
 
   const filtered = events.filter((e) => {
     if (activeFilter === 'fixed') return e.isFixed;

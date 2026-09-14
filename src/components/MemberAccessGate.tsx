@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock3, LogOut, RefreshCw } from 'lucide-react';
+import { Clock3, LogOut, RefreshCw, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function MemberAccessGate({ children }: { children: React.ReactNode }) {
@@ -14,7 +14,15 @@ export default function MemberAccessGate({ children }: { children: React.ReactNo
   }, [loading, user, router]);
 
   if (loading || !user) {
-    return <div className="min-h-screen bg-background" aria-busy="true" />;
+    return (
+      <main dir="rtl" className="flex min-h-screen items-center justify-center bg-background px-4" aria-busy="true">
+        <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
+          <Loader2 size={28} className="animate-spin text-primary" aria-hidden="true" />
+          <p className="text-sm">טוענים את המרחב...</p>
+          <p className="text-xs">אם המסך לא נטען, נסה לרענן את הדף.</p>
+        </div>
+      </main>
+    );
   }
 
   if (!profile || profile.is_approved !== true) {
