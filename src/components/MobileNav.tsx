@@ -9,6 +9,7 @@ import {
   RotateCcw,
   User,
   Settings,
+  ShieldCheck,
   LogOut,
   Trophy,
   X,
@@ -40,7 +41,7 @@ interface MobileNavProps {
 
 export default function MobileNav({ activeRoute }: MobileNavProps) {
   const [moreOpen, setMoreOpen] = useState(false);
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, isAdmin } = useAuth();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -52,6 +53,9 @@ export default function MobileNav({ activeRoute }: MobileNavProps) {
 
   const displayName = profile?.display_name || 'PT100';
   const initials = displayName.charAt(0).toUpperCase();
+  const moreItems = isAdmin
+    ? [...MORE_ITEMS, { href: '/admin/members', label: 'ניהול חברים', icon: ShieldCheck }]
+    : MORE_ITEMS;
 
   return (
     <>
@@ -140,7 +144,7 @@ export default function MobileNav({ activeRoute }: MobileNavProps) {
             </div>
 
             <div className="px-3 py-3 space-y-0.5">
-              {MORE_ITEMS.map((item) => {
+              {moreItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeRoute === item.href;
                 return (
