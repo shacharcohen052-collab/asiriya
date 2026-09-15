@@ -123,21 +123,30 @@ function getWeekDayDate(dayIndex: number) {
 }
 
 function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
-  const lines = text.split('\n').filter((l) => l.trim());
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const events: Partial<ScheduleEvent>[] = [];
   const timeRegex = /(\d{1,2}[:.]\d{2})\s*(?:[-–—]|עד|to)\s*(\d{1,2}[:.]\d{2})/i;
   const dateRegex = /(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?/;
+  const rangeYearRegex = /\b\d{1,2}\s*[–—-]\s*\d{1,2}\s+(?:ב)?([א-ת]+)\s+(\d{4})\b/;
   let currentDate = '';
+  let currentYear = new Date().getFullYear();
+  let lastEvent: Partial<ScheduleEvent> | null = null;
 
   for (const line of lines) {
+    const rangeYearMatch = line.match(rangeYearRegex);
+    if (rangeYearMatch) {
+      currentYear = Number(rangeYearMatch[2]);
+      continue;
+    }
     const timeMatch = line.match(timeRegex);
     const dateMatch = line.match(dateRegex);
-    const hebrewHeader = line.match(/(?:יום\s+)?(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)\s*,?\s*(\d{1,2})\s+([א-ת]+)/);
-    const dayMatch = HEBREW_DAYS.findIndex((day) => new RegExp(`(?:^|\\s)(?:יום\\s+)?${day}(?:[\\s,]|$)`).test(line));
+    const hebrewHeader = line.match(/(?:\*\s*)?(?:יום\s+)?(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)\s*,?\s*(\d{1,2})\s+(?:ב)?([א-ת]+)(?:\s+(\d{4}))?/);
+    const dayMatch = HEBREW_DAYS.findIndex((day) => new RegExp(`(?:^|\s)(?:יום\s+)?${day}(?:[\s,]|$)`).test(line));
     if (hebrewHeader) {
       const month = HEBREW_MONTHS[hebrewHeader[3]];
+      if (hebrewHeader[4]) currentYear = Number(hebrewHeader[4]);
       if (month) {
-        currentDate = `${new Date().getFullYear()}-${String(month).padStart(2, '0')}-${hebrewHeader[2].padStart(2, '0')}`;
+        currentDate = `${currentYear}-${String(month).padStart(2, '0')}-${hebrewHeader[2].padStart(2, '0')}`;
       } else if (dayMatch >= 0) {
         currentDate = getWeekDayDate(dayMatch);
       }
@@ -151,9 +160,9 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
     if (timeMatch) {
       const startTime = timeMatch[1].replace('.', ':');
       const endTime = timeMatch[2].replace('.', ':');
-      const title = line.replace(timeRegex, '').replace(dateRegex, '').trim().replace(/^[-–: ,\s]+/, '').trim();
+      const title = line.replace(timeRegex, '').replace(dateRegex, '').trim().replace(/^[-–: ,\s]+/, '').trim().replace(/^\*+|\*+$/g, '').trim();
       if (/הכנה\s+לשיעור/i.test(title)) continue;
-      events.push({
+      const event: Partial<ScheduleEvent> = {
         id: `imported-${Date.now()}-${Math.random()}`,
         title: title || 'שיעור',
         startTime,
@@ -171,7 +180,12 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
         isPast: false,
         myActualAttendance: null,
         isSynced: false,
-      });
+      };
+      events.push(event);
+      lastEvent = event;
+    } else if (lastEvent && /^[-–—]/.test(line)) {
+      const continuation = line.replace(/^[-–—]\s*/, '').trim();
+      if (continuation) lastEvent.title = `${lastEvent.title} — ${continuation}`;
     }
   }
   const unique = new Set<string>();
