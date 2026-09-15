@@ -78,7 +78,7 @@ export default function SettingsPage() {
   };
 
   const handleGoogleConnect = () => {
-    alert('חיבור Google Calendar דורש הגדרת OAuth. פנה למנהל המערכת.');
+    alert('חיבור Google Calendar עדיין לא הופעל. נדרשת הגדרת OAuth במערכת — אין צורך להדביק קישור ידני. עד שהחיבור יוגדר, אפשר להשתמש בייבוא השבוע דרך קובץ ICS.');
   };
 
   return (
@@ -145,6 +145,7 @@ export default function SettingsPage() {
         </Section>
 
         {/* Calendar Sync */}
+        <div id="google-calendar" className="scroll-mt-4">
         <Section icon={<Calendar size={16} className="text-primary" />} title="סנכרון יומן">
           <div className="py-3">
             <div className="flex items-start justify-between gap-4">
@@ -187,6 +188,7 @@ export default function SettingsPage() {
             </a>
           </div>
         </Section>
+        </div>
 
         {/* Appearance */}
         <Section icon={<Moon size={16} className="text-primary" />} title="מראה">

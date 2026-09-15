@@ -112,7 +112,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
             </div>
             <button
               type="button"
-              onClick={() => { if (!googleStatus.connected) router.push('/settings'); }}
+              onClick={() => { if (!googleStatus.connected) router.push('/settings#google-calendar'); }}
               className={`text-2xs font-semibold px-2.5 py-1 rounded-full transition-colors ${
                 googleStatus.connected
                   ? 'bg-green-50 text-green-700' :'bg-muted text-muted-foreground'

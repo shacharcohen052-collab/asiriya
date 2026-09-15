@@ -68,6 +68,7 @@ export default function CalendarScheduleView({
   onAttendanceReport?: (id: string, status: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const horizontalDrag = useRef<{ x: number; y: number; left: number } | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [density, setDensity] = useState(() => {
     if (typeof window === 'undefined') return 0.7;
@@ -144,16 +145,32 @@ export default function CalendarScheduleView({
               distance: touchDistance(touchEvent.touches[0], touchEvent.touches[1]),
               density,
             };
+            horizontalDrag.current = null;
+          } else if (touchEvent.touches.length === 1 && scrollRef.current) {
+            horizontalDrag.current = {
+              x: touchEvent.touches[0].clientX,
+              y: touchEvent.touches[0].clientY,
+              left: scrollRef.current.scrollLeft,
+            };
           }
         }}
         onTouchMove={(touchEvent) => {
           if (touchEvent.touches.length === 2 && pinchStart.current) {
             const distance = touchDistance(touchEvent.touches[0], touchEvent.touches[1]);
             setDensity(Math.min(1.3, Math.max(0.55, pinchStart.current.density * distance / pinchStart.current.distance)));
+          } else if (touchEvent.touches.length === 1 && horizontalDrag.current && scrollRef.current) {
+            const touch = touchEvent.touches[0];
+            const dx = touch.clientX - horizontalDrag.current.x;
+            const dy = touch.clientY - horizontalDrag.current.y;
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 4) {
+              touchEvent.preventDefault();
+              scrollRef.current.scrollLeft = horizontalDrag.current.left - dx;
+            }
           }
         }}
         onTouchEnd={() => {
           pinchStart.current = null;
+          horizontalDrag.current = null;
         }}
       >
         <div className="w-max min-w-[680px] md:w-full md:min-w-0">
