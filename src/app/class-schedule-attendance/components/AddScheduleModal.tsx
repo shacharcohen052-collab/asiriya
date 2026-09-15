@@ -161,7 +161,7 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
       const startTime = timeMatch[1].replace('.', ':');
       const endTime = timeMatch[2].replace('.', ':');
       const title = line.replace(timeRegex, '').replace(dateRegex, '').trim().replace(/^[-–: ,\s]+/, '').trim().replace(/^\*+|\*+$/g, '').trim();
-      if (/הכנה\s+לשיעור/i.test(title)) continue;
+      if (/הכנה\s+לשיעור|הפסקה|תפילה|לא\s+משודר/i.test(title)) continue;
       const event: Partial<ScheduleEvent> = {
         id: `imported-${Date.now()}-${Math.random()}`,
         title: title || 'שיעור',
