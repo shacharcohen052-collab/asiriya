@@ -97,7 +97,9 @@ export default function CalendarScheduleView({
                   const start = Math.max(minutes(event.startTime), START_HOUR * 60);
                   const end = Math.min(Math.max(minutes(event.endTime), start + 15), END_HOUR * 60);
                   const top = ((start - START_HOUR * 60) / 60) * HOUR_HEIGHT;
-                  const height = Math.max(((end - start) / 60) * HOUR_HEIGHT, 28);
+                  // Keep short meetings proportional to their real duration:
+                  // a 15-minute event must end exactly on the 12:00 grid line.
+                  const height = Math.max(((end - start) / 60) * HOUR_HEIGHT, 16);
                   return (
                     <div
                       key={event.id}
