@@ -163,7 +163,7 @@ export default function ClassScheduleAttendancePage() {
 
   return (
     <AppLayout activeRoute="/class-schedule-attendance">
-      <div className="space-y-6">
+      <div className="stagger-children space-y-6">
         <ScheduleHeader
           weekOffset={weekOffset}
           onWeekOffsetChange={setWeekOffset}
@@ -174,7 +174,7 @@ export default function ClassScheduleAttendancePage() {
           onViewModeChange={setViewMode}
         />
         {loading ? (
-          <div className="bg-card border border-border rounded-xl p-8 text-center text-sm text-muted-foreground">טוען את הלו״ז…</div>
+          <div className="card-shadow flex min-h-32 items-center justify-center rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground" aria-busy="true">טוען את הלו״ז…</div>
         ) : viewMode === 'calendar' ? (
             <CalendarScheduleView
               weekOffset={weekOffset}

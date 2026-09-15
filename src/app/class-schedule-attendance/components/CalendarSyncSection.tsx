@@ -87,7 +87,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5 card-shadow fade-in">
+    <div className="bg-card border border-border rounded-2xl p-5 card-shadow-md fade-in">
       <h2 className="text-base font-bold text-foreground mb-4">ייבוא ליומן</h2>
       <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
         ייבוא חד־פעמי של השבוע הנוכחי ליומן האישי שלך. בכל שבוע ניתן לבצע ייבוא מחדש.

@@ -32,14 +32,14 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
     <>
       <div className="flex min-w-0 flex-col gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">לו&quot;ז שיעורים ונוכחות</h1>
+          <h1 className="text-hero text-foreground">לו&quot;ז שיעורים ונוכחות</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             שיעורים, פגישות קבועות ותכנון הגעה אישי
           </p>
         </div>
 
         <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
-          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-card p-1">
+          <div className="card-shadow flex shrink-0 items-center gap-1 rounded-xl border border-border bg-card p-1">
             <button type="button" onClick={() => onViewModeChange('list')} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}>
               <List size={14} /> רשימה
             </button>
@@ -48,7 +48,7 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
             </button>
           </div>
           {/* Week navigation */}
-          <div className="flex min-w-0 shrink items-center gap-1 bg-card border border-border rounded-xl p-1">
+          <div className="card-shadow flex min-w-0 shrink items-center gap-1 bg-card border border-border rounded-xl p-1">
             <button
               onClick={() => onWeekOffsetChange(weekOffset - 1)}
               className="p-1.5 rounded-lg hover:bg-muted transition-colors"

@@ -416,7 +416,7 @@ export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], sho
   };
 
   return (
-    <div className="space-y-4">
+    <div className="stagger-children space-y-4">
       {/* Day groups */}
       {Object.keys(grouped).length === 0 ? (
         <div className="bg-card border border-border rounded-xl p-8 text-center">
