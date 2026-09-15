@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Calendar, Download, Unlink, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import type { ScheduleEvent } from './AddScheduleModal';
 
 // Backend integration point: fetch user's calendar sync status from /api/calendar-connections?userId=me
 const MOCK_SYNC_STATUS = {
@@ -17,7 +18,7 @@ const MOCK_SYNC_STATUS = {
   },
 };
 
-export default function CalendarSyncSection() {
+export default function CalendarSyncSection({ events = [] }: { events?: ScheduleEvent[] }) {
   const [googleStatus, setGoogleStatus] = useState(MOCK_SYNC_STATUS.google);
   const [appleStatus] = useState(MOCK_SYNC_STATUS.apple);
   const [syncing, setSyncing] = useState(false);
@@ -45,10 +46,31 @@ export default function CalendarSyncSection() {
 
   const handleICSExport = async () => {
     setExporting(true);
-    // Backend integration point: GET /api/calendar/export/ics?userId=me — generates ICS file
-    await new Promise((r) => setTimeout(r, 800));
+    const plannedEvents = events.filter((event) => event.myPlan && event.myPlan !== 'not_coming');
+    const escapeICS = (value: string) => value.replace(/\\/g, '\\\\').replace(/[,;\n]/g, (match) => match === '\n' ? '\\n' : `\\${match}`);
+    const icsDate = (date: string, time: string) => `${date.replace(/-/g, '')}T${time.replace(':', '')}00`;
+    const body = [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Asiriya//Schedule//HE', 'CALSCALE:GREGORIAN',
+      ...plannedEvents.flatMap((event) => [
+        'BEGIN:VEVENT',
+        `UID:${event.id}@asiriya`,
+        `DTSTART:${icsDate(event.date, event.startTime)}`,
+        `DTEND:${icsDate(event.date, event.endTime)}`,
+        `SUMMARY:${escapeICS(event.title)}`,
+        `DESCRIPTION:${escapeICS(`תכנון הגעה: ${event.myPlan}`)}`,
+        'END:VEVENT',
+      ]),
+      'END:VCALENDAR',
+    ].join('\r\n');
+    const blob = new Blob([body], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'asiriya-schedule.ics';
+    anchor.click();
+    URL.revokeObjectURL(url);
     setExporting(false);
-    toast.success('קובץ ICS הורד בהצלחה. פתח אותו ביישום היומן שלך.');
+    toast.success(`קובץ ICS הורד בהצלחה (${plannedEvents.length} אירועים).`);
   };
 
   return (
