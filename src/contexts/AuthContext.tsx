@@ -74,10 +74,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!isMounted()) return;
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
-    setLoading(false);
 
     if (!nextSession?.user) {
       setProfile(null);
+      setLoading(false);
       return;
     }
 
@@ -85,7 +85,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Do not await this from inside onAuthStateChange. Supabase auth callbacks
     // must return immediately so the browser session can finish persisting.
     const nextProfile = await fetchProfile(nextSession.user.id);
-    if (isMounted()) setProfile(nextProfile);
+    if (isMounted()) {
+      setProfile(nextProfile);
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

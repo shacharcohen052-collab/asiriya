@@ -42,11 +42,12 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
   const handleICSExport = async () => {
     setExporting(true);
     const plannedEvents = events.filter((event) => event.myPlan && event.myPlan !== 'not_coming');
+    const exportEvents = plannedEvents.length ? plannedEvents : events;
     const escapeICS = (value: string) => value.replace(/\\/g, '\\\\').replace(/[,;\n]/g, (match) => match === '\n' ? '\\n' : `\\${match}`);
     const icsDate = (date: string, time: string) => `${date.replace(/-/g, '')}T${time.replace(':', '')}00`;
     const body = [
       'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Asiriya//Schedule//HE', 'CALSCALE:GREGORIAN',
-      ...plannedEvents.flatMap((event) => [
+      ...exportEvents.flatMap((event) => [
         'BEGIN:VEVENT',
         `UID:${event.id}@asiriya`,
         `DTSTART:${icsDate(event.date, event.startTime)}`,
@@ -72,7 +73,7 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
     anchor.click();
     document.body.removeChild(anchor);
     setExporting(false);
-    toast.success(plannedEvents.length ? `קובץ ICS מוכן (${plannedEvents.length} אירועים).` : 'אין עדיין אירועים שסומנו להגעה.');
+    toast.success(plannedEvents.length ? `קובץ ICS מוכן (${plannedEvents.length} אירועים).` : `קובץ ICS מוכן (${exportEvents.length} אירועי הלו״ז).`);
   };
 
   return (
