@@ -135,7 +135,7 @@ export default function CalendarScheduleView({
       </div>
       <div
         ref={scrollRef}
-        className="max-h-[68vh] w-full max-w-full overflow-y-auto overflow-x-hidden"
+        className="max-h-[68vh] w-full max-w-full overflow-x-auto overflow-y-auto"
         style={{ touchAction: 'pan-y' }}
         onTouchStart={(touchEvent) => {
           if (touchEvent.touches.length === 2) {
@@ -155,8 +155,8 @@ export default function CalendarScheduleView({
           pinchStart.current = null;
         }}
       >
-        <div className="w-full min-w-0 max-w-full">
-          <div className="sticky top-0 z-30 grid grid-cols-[38px_repeat(7,minmax(0,1fr))] border-b border-border bg-card shadow-sm" dir="rtl">
+        <div className="w-full min-w-[680px] max-w-full md:min-w-0">
+          <div className="sticky top-0 z-30 grid grid-cols-[42px_repeat(7,minmax(88px,1fr))] border-b border-border bg-card shadow-sm md:grid-cols-[48px_repeat(7,minmax(0,1fr))]" dir="rtl">
             <div className="sticky right-0 z-40 border-r border-border bg-card" />
             {days.map((day) => {
               const isToday = day.key === dateKey(new Date());
@@ -171,7 +171,7 @@ export default function CalendarScheduleView({
             })}
           </div>
 
-          <div className="grid grid-cols-[38px_repeat(7,minmax(0,1fr))]" dir="rtl">
+          <div className="grid grid-cols-[42px_repeat(7,minmax(88px,1fr))] md:grid-cols-[48px_repeat(7,minmax(0,1fr))]" dir="rtl">
             <div className="sticky right-0 z-20 relative bg-card" style={{ height: `${timelineHeight}px` }}>
               {hours.map((hour, index) => (
                 <div key={hour} className="relative border-b border-border" style={{ height: `${hourHeights[index]}px` }}>
