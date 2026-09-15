@@ -1,13 +1,20 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, Trash2, X } from 'lucide-react';
 import type { ScheduleEvent } from './AddScheduleModal';
 
 const DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const START_HOUR = 0;
 const END_HOUR = 23;
 const HOUR_HEIGHT = 64;
+const PLAN_OPTIONS = [
+  { key: 'routing', label: 'מנתב' },
+  { key: 'physical', label: 'פיזית' },
+  { key: 'virtual', label: 'וירטואלית' },
+  { key: 'with_help', label: "בעזרת ה'" },
+  { key: 'not_coming', label: 'לא מגיע' },
+];
 
 function weekStart(offset: number) {
   const date = new Date();
@@ -29,12 +36,17 @@ export default function CalendarScheduleView({
   weekOffset,
   events,
   onDeleteEvent,
+  onPlanChange,
+  onAttendanceReport,
 }: {
   weekOffset: number;
   events: ScheduleEvent[];
   onDeleteEvent?: (id: string) => void;
+  onPlanChange?: (id: string, plan: string | null) => void;
+  onAttendanceReport?: (id: string, status: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const days = useMemo(() => {
     const start = weekStart(weekOffset);
     return DAYS.map((label, index) => {
@@ -53,6 +65,9 @@ export default function CalendarScheduleView({
     });
     return groups;
   }, [events]);
+
+  const selectedIsZoomOnly = selectedEvent ? /זום|עשירייה/i.test(selectedEvent.title) : false;
+  const selectedIsPast = selectedEvent ? new Date(`${selectedEvent.date}T${selectedEvent.endTime}`) <= new Date() : false;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, left: 0 });
@@ -107,6 +122,12 @@ export default function CalendarScheduleView({
                       style={{ top: `${top}px`, height: `${height}px` }}
                       dir="rtl"
                       title={`${event.title} ${event.startTime}–${event.endTime}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedEvent(event)}
+                      onKeyDown={(keyboardEvent) => {
+                        if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') setSelectedEvent(event);
+                      }}
                     >
                       <div className="flex items-start justify-between gap-1">
                         <p className={`truncate font-bold text-foreground ${height < 42 ? 'text-[10px]' : 'text-xs'}`}>{event.title}</p>
@@ -116,7 +137,8 @@ export default function CalendarScheduleView({
                             className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                             title="הסר אירוע"
                             aria-label="הסר אירוע"
-                            onClick={() => {
+                            onClick={(clickEvent) => {
+                              clickEvent.stopPropagation();
                               if (window.confirm('להסיר את האירוע הזה מהלו״ז?')) onDeleteEvent(event.id);
                             }}
                           >
@@ -133,6 +155,50 @@ export default function CalendarScheduleView({
           </div>
         </div>
       </div>
+      {selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setSelectedEvent(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl" dir="rtl" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-base font-bold text-foreground">{selectedEvent.title}</h2>
+                <p className="mt-1 text-xs text-muted-foreground">{selectedEvent.startTime}–{selectedEvent.endTime}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedEvent(null)} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label="סגור">×</button>
+            </div>
+
+            {!selectedIsPast ? (
+              <div>
+                <p className="mb-2 text-sm font-semibold text-foreground">איך אתה מתכנן להגיע?</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(selectedIsZoomOnly ? [{ key: 'virtual', label: 'וירטואלית' }] : PLAN_OPTIONS).map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => {
+                        onPlanChange?.(selectedEvent.id, selectedEvent.myPlan === option.key ? null : option.key);
+                        setSelectedEvent(null);
+                      }}
+                      className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${selectedEvent.myPlan === option.key ? 'border-primary bg-primary text-white' : 'border-border text-foreground hover:border-primary hover:bg-primary/5'}`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : selectedEvent.myActualAttendance === null ? (
+              <div>
+                <p className="mb-2 text-sm font-semibold text-foreground">האם הגעת לשיעור?</p>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => { onAttendanceReport?.(selectedEvent.id, 'attended'); setSelectedEvent(null); }} className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-green-50 px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-100"><Check size={13} />הגעתי</button>
+                  <button type="button" onClick={() => { onAttendanceReport?.(selectedEvent.id, 'not_attended'); setSelectedEvent(null); }} className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-border"><X size={13} />לא הגעתי</button>
+                </div>
+              </div>
+            ) : (
+              <p className="rounded-lg bg-muted p-3 text-center text-sm text-muted-foreground">הדיווח נשמר: {selectedEvent.myActualAttendance === 'attended' ? 'הגעתי' : 'לא הגעתי'}</p>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

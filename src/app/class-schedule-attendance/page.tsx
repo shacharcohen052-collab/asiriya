@@ -143,6 +143,16 @@ export default function ClassScheduleAttendancePage() {
     await loadSchedule();
   };
 
+  const updatePlan = (id: string, plan: string | null) => {
+    setEvents((previous) => previous.map((event) => (event.id === id ? { ...event, myPlan: plan } : event)));
+    toast.success(plan ? 'תכנון ההגעה עודכן' : 'תכנון ההגעה בוטל');
+  };
+
+  const updateAttendance = (id: string, status: string) => {
+    setEvents((previous) => previous.map((event) => (event.id === id ? { ...event, myActualAttendance: status } : event)));
+    toast.success(status === 'attended' ? 'עודכן: הגעת' : 'עודכן: לא הגעת');
+  };
+
   return (
     <AppLayout activeRoute="/class-schedule-attendance">
       <div className="space-y-6">
@@ -158,7 +168,13 @@ export default function ClassScheduleAttendancePage() {
         {loading ? (
           <div className="bg-card border border-border rounded-xl p-8 text-center text-sm text-muted-foreground">טוען את הלו״ז…</div>
         ) : viewMode === 'calendar' ? (
-            <CalendarScheduleView weekOffset={weekOffset} events={events} onDeleteEvent={deleteEvent} />
+            <CalendarScheduleView
+              weekOffset={weekOffset}
+              events={events}
+              onDeleteEvent={deleteEvent}
+              onPlanChange={updatePlan}
+              onAttendanceReport={updateAttendance}
+            />
           ) : (
             <WeekScheduleView weekOffset={weekOffset} addedEvents={events} showDemoEvents={false} onDeleteEvent={deleteEvent} />
           )}
