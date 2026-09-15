@@ -233,6 +233,15 @@ interface EventCardProps {
 function EventCard({ event, onPlanChange, onAttendanceReport, onDelete }: EventCardProps) {
   const [showPlanners, setShowPlanners] = useState(false);
   const isZoomOnly = /זום|עשירייה/i.test(event.title);
+  const isMeal = /סעודה|חומוס/i.test(event.title);
+  const isPreparation = /הכנה/i.test(event.title);
+  const accent = isMeal
+    ? 'border-orange-300 bg-orange-50/70'
+    : isPreparation
+    ? 'border-violet-300 bg-violet-50/70'
+    : event.isFixed
+    ? 'border-sky-300 bg-sky-50/70'
+    : 'border-fuchsia-200 bg-fuchsia-50/40';
 
   const handlePlanClick = (key: string) => {
     // Backend integration point: POST /api/attendance-plans { eventId, status }
@@ -248,18 +257,17 @@ function EventCard({ event, onPlanChange, onAttendanceReport, onDelete }: EventC
 
   return (
     <div
-      className={`rounded-xl border p-3 transition-all duration-200 ${
+      className={`card-shadow rounded-2xl border-r-4 p-3 transition-all duration-200 hover:-translate-y-0.5 ${
         event.isPast
           ? 'border-border bg-muted/30 opacity-75'
-          : event.isFixed
-          ? 'border-primary/25 bg-fixed-meeting-bg/50' :'border-border bg-card'
+          : accent
       }`}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-sm font-semibold text-foreground">{event.title}</span>
+            <span className="text-sm font-bold text-foreground">{event.title}</span>
             {event.isSynced && (
               <span className="text-2xs bg-green-50 text-green-700 font-semibold px-1.5 py-0.5 rounded-full">
                 ✓ מסונכרן
@@ -303,7 +311,7 @@ function EventCard({ event, onPlanChange, onAttendanceReport, onDelete }: EventC
             <button
               key={`chip-${event.id}-${option.key}`}
               onClick={() => handlePlanClick(option.key)}
-              className={`attendance-chip text-xs ${event.myPlan === option.key ? 'selected' : ''}`}
+              className={`attendance-chip text-xs ${event.myPlan === option.key ? 'selected shadow-sm ring-2 ring-primary/15' : ''}`}
             >
               {option.label}
             </button>

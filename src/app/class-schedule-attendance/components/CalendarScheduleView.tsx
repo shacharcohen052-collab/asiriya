@@ -47,6 +47,13 @@ function calendarTitle(title: string) {
   return title;
 }
 
+function calendarEventColor(event: ScheduleEvent) {
+  if (/סעודה|חומוס/i.test(event.title)) return 'border-orange-300 bg-orange-200 text-orange-950';
+  if (/הכנה/i.test(event.title)) return 'border-violet-300 bg-violet-200 text-violet-950';
+  if (/עשירייה|זום|PT100/i.test(event.title)) return 'border-fuchsia-300 bg-fuchsia-200 text-fuchsia-950';
+  return event.isFixed ? 'border-sky-300 bg-sky-200 text-sky-950' : 'border-blue-200 bg-blue-50';
+}
+
 export default function CalendarScheduleView({
   weekOffset,
   events,
@@ -193,7 +200,7 @@ export default function CalendarScheduleView({
                   return (
                     <div
                       key={event.id}
-                      className={`absolute inset-x-0.5 z-10 overflow-visible rounded-md border text-right shadow-sm ${height < 28 ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${event.isFixed ? 'border-amber-300 bg-amber-200 text-amber-950' : 'border-blue-200 bg-blue-50'}`}
+                      className={`absolute inset-x-0.5 z-10 overflow-visible rounded-md border text-right shadow-sm transition-colors ${height < 28 ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${calendarEventColor(event)}`}
                       style={{ top: `${top}px`, height: `${positionedHeight}px` }}
                       dir="rtl"
                       title={`${event.title} ${event.startTime}–${event.endTime}`}
