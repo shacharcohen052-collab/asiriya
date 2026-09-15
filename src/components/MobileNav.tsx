@@ -57,7 +57,7 @@ export default function MobileNav({ activeRoute }: MobileNavProps) {
 
   return (
     <>
-      <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-card border-b border-border sticky top-0 z-20">
+      <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border sticky top-0 z-20">
         <div className="flex items-center gap-2">
           <AppLogo size={28} />
           <span className="font-bold text-foreground text-base">PT100</span>
@@ -77,13 +77,13 @@ export default function MobileNav({ activeRoute }: MobileNavProps) {
         <>
           <button
             type="button"
-            className="fixed inset-0 bg-black/40 z-40 lg:hidden cursor-default"
+            className="fixed inset-0 bg-black/40 z-40 cursor-default"
             onClick={() => setOpen(false)}
             aria-label="סגירת תפריט"
           />
           <aside
             dir="rtl"
-            className="fixed right-0 top-0 bottom-0 z-50 w-[min(88vw,320px)] bg-card border-l border-border shadow-2xl lg:hidden flex flex-col"
+            className="fixed right-0 top-0 bottom-0 z-50 w-[min(88vw,320px)] bg-card border-l border-border shadow-2xl flex flex-col"
             role="dialog"
             aria-label="תפריט ניווט"
           >

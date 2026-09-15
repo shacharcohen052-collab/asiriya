@@ -48,6 +48,7 @@ export default function CalendarScheduleView({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
+  const [density, setDensity] = useState<0.7 | 1 | 1.3>(0.7);
   const days = useMemo(() => {
     const start = weekStart(weekOffset);
     return DAYS.map((label, index) => {
@@ -71,7 +72,7 @@ export default function CalendarScheduleView({
     const hourStart = hour * 60;
     const hourEnd = hourStart + 60;
     const hasContent = events.some((event) => minutes(event.startTime) < hourEnd && minutes(event.endTime) > hourStart);
-    return hasContent ? CONTENT_HOUR_HEIGHT : EMPTY_HOUR_HEIGHT;
+    return Math.round((hasContent ? CONTENT_HOUR_HEIGHT : EMPTY_HOUR_HEIGHT) * density);
   });
   const timelineHeight = hourHeights.reduce((sum, height) => sum + height, 0);
   const positionAt = (value: number) => {
@@ -94,9 +95,17 @@ export default function CalendarScheduleView({
 
   return (
     <section className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm" dir="rtl">
+      <div className="flex items-center justify-between gap-2 border-b border-border bg-card px-3 py-2">
+        <span className="text-xs font-semibold text-muted-foreground">גודל תצוגה</span>
+        <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+          <button type="button" onClick={() => setDensity(0.7)} className={`rounded px-2 py-1 text-xs font-bold ${density === 0.7 ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground'}`} aria-label="צמצם את הקלנדר">−</button>
+          <button type="button" onClick={() => setDensity(1)} className={`rounded px-2 py-1 text-xs font-bold ${density === 1 ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground'}`}>רגיל</button>
+          <button type="button" onClick={() => setDensity(1.3)} className={`rounded px-2 py-1 text-xs font-bold ${density === 1.3 ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground'}`} aria-label="הגדל את הקלנדר">+</button>
+        </div>
+      </div>
       <div ref={scrollRef} className="max-h-[68vh] overflow-auto">
-        <div className="min-w-[640px]">
-          <div className="sticky top-0 z-30 grid grid-cols-[48px_repeat(7,minmax(84px,1fr))] border-b border-border bg-card shadow-sm" dir="rtl">
+        <div className="min-w-0 w-full">
+          <div className="sticky top-0 z-30 grid grid-cols-[38px_repeat(7,minmax(0,1fr))] border-b border-border bg-card shadow-sm" dir="rtl">
             <div className="sticky right-0 z-40 border-r border-border bg-card" />
             {days.map((day) => {
               const isToday = day.key === dateKey(new Date());
@@ -111,7 +120,7 @@ export default function CalendarScheduleView({
             })}
           </div>
 
-          <div className="grid grid-cols-[48px_repeat(7,minmax(84px,1fr))]" dir="rtl">
+          <div className="grid grid-cols-[38px_repeat(7,minmax(0,1fr))]" dir="rtl">
             <div className="sticky right-0 z-20 relative bg-card" style={{ height: `${timelineHeight}px` }}>
               {hours.map((hour, index) => (
                 <div key={hour} className="relative border-b border-border" style={{ height: `${hourHeights[index]}px` }}>

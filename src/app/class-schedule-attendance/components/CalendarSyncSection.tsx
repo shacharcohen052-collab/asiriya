@@ -23,6 +23,7 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
   const [appleStatus] = useState(MOCK_SYNC_STATUS.apple);
   const [syncing, setSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   const handleGoogleSync = () => {
     void handleICSExport();
@@ -58,6 +59,10 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
     ].join('\r\n');
     const blob = new Blob([body], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
+    setDownloadUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return url;
+    });
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = 'asiriya-schedule.ics';
@@ -66,9 +71,8 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
     setExporting(false);
-    toast.success(`קובץ ICS הורד בהצלחה (${plannedEvents.length} אירועים).`);
+    toast.success(plannedEvents.length ? `קובץ ICS מוכן (${plannedEvents.length} אירועים).` : 'אין עדיין אירועים שסומנו להגעה.');
   };
 
   return (
@@ -190,6 +194,11 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
               </>
             )}
           </button>
+          {downloadUrl && (
+            <a href={downloadUrl} download="asiriya-schedule.ics" target="_blank" rel="noreferrer" className="mt-2 block text-center text-xs font-semibold text-primary hover:underline">
+              אם ההורדה לא התחילה: לחץ כאן לפתיחת קובץ ה־ICS
+            </a>
+          )}
         </div>
       </div>
 
