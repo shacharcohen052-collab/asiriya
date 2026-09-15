@@ -52,7 +52,11 @@ export default function CalendarScheduleView({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
-  const [density, setDensity] = useState(0.7);
+  const [density, setDensity] = useState(() => {
+    if (typeof window === 'undefined') return 0.7;
+    const saved = Number(window.localStorage.getItem('asiriya.schedule.density'));
+    return Number.isFinite(saved) && saved >= 0.55 && saved <= 1.3 ? saved : 0.7;
+  });
   const pinchStart = useRef<{ distance: number; density: number } | null>(null);
   const days = useMemo(() => {
     const start = weekStart(weekOffset);
@@ -97,6 +101,10 @@ export default function CalendarScheduleView({
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, left: 0 });
   }, [weekOffset]);
+
+  useEffect(() => {
+    window.localStorage.setItem('asiriya.schedule.density', String(density));
+  }, [density]);
 
   return (
     <section className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm" dir="rtl">
