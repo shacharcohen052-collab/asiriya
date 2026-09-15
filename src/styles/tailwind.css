@@ -295,6 +295,33 @@
   .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
   .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
   .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+
+  /* Shared interaction language: calm lift, clear focus, and no layout jumps. */
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--ring) 35%, transparent);
+    outline-offset: 2px;
+  }
+
+  .card-shadow, .card-shadow-md {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .card-shadow:hover, .card-shadow-md:hover {
+    box-shadow: 0 8px 20px rgba(28, 25, 23, 0.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ===================== DARK MODE ===================== */
