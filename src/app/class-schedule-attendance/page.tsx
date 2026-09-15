@@ -57,7 +57,7 @@ export default function ClassScheduleAttendancePage() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>(() => {
     if (typeof window === 'undefined') return 'list';
-    const saved = window.localStorage.getItem('asiriya.schedule.viewMode.v2');
+    const saved = window.localStorage.getItem('asiriya.schedule.viewMode.v3');
     return saved === 'calendar' || saved === 'list' ? saved : 'list';
   });
   const { isAdmin, isApproved, profile } = useAuth();
@@ -94,7 +94,7 @@ export default function ClassScheduleAttendancePage() {
   }, [loadSchedule]);
 
   useEffect(() => {
-    window.localStorage.setItem('asiriya.schedule.viewMode.v2', viewMode);
+    window.localStorage.setItem('asiriya.schedule.viewMode.v3', viewMode);
   }, [viewMode]);
 
   const addEvents = async (newEvents: ScheduleEvent[]) => {

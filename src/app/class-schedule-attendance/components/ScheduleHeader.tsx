@@ -30,7 +30,7 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex min-w-0 flex-col gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">לו&quot;ז שיעורים ונוכחות</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -38,8 +38,8 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-card p-1">
             <button type="button" onClick={() => onViewModeChange('list')} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}>
               <List size={14} /> רשימה
             </button>
@@ -48,7 +48,7 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
             </button>
           </div>
           {/* Week navigation */}
-          <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1">
+          <div className="flex min-w-0 shrink items-center gap-1 bg-card border border-border rounded-xl p-1">
             <button
               onClick={() => onWeekOffsetChange(weekOffset - 1)}
               className="p-1.5 rounded-lg hover:bg-muted transition-colors"
@@ -56,7 +56,7 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
             >
               <ChevronRight size={16} className="text-muted-foreground" />
             </button>
-            <span className="text-sm font-semibold text-foreground px-2 min-w-[120px] text-center">
+            <span className="min-w-0 px-2 text-center text-sm font-semibold text-foreground">
               {getWeekLabel(weekOffset)}
             </span>
             <button
@@ -70,7 +70,7 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
 
           <button
             onClick={() => setShowModal(true)}
-            className="btn-primary text-sm py-2 px-4"
+            className="btn-primary shrink-0 text-sm py-2 px-3"
           >
             <Plus size={16} />
             הוסף לו&quot;ז שבועי

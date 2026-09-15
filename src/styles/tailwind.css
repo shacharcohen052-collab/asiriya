@@ -44,6 +44,9 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     direction: rtl;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   html {
