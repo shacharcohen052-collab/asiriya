@@ -194,12 +194,12 @@ export default function CalendarScheduleView({
                         if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') setSelectedEvent(event);
                       }}
                     >
-                      <div className="flex items-start justify-between gap-1">
-                        <p className={`min-w-0 break-words whitespace-normal leading-tight font-bold text-foreground ${height < 28 ? 'text-[9px]' : 'text-[10px]'}`} style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: height < 42 ? 2 : 3, overflow: 'hidden' }}>{event.title}</p>
+                      <div className="relative min-w-0">
+                        <p className={`min-w-0 truncate whitespace-nowrap pl-3 leading-tight font-bold text-foreground ${height < 28 ? 'text-[9px]' : 'text-[10px]'}`} dir="rtl" title={event.title}>{event.title}</p>
                         {onDeleteEvent && (
                           <button
                             type="button"
-                            className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            className="absolute left-0 top-0 rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                             title="הסר אירוע"
                             aria-label="הסר אירוע"
                             onClick={(clickEvent) => {

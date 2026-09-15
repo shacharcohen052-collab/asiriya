@@ -40,11 +40,11 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1">
-            <button type="button" onClick={() => onViewModeChange('calendar')} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${viewMode === 'calendar' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}>
-              <CalendarDays size={14} /> קלנדר
-            </button>
             <button type="button" onClick={() => onViewModeChange('list')} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}>
               <List size={14} /> רשימה
+            </button>
+            <button type="button" onClick={() => onViewModeChange('calendar')} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${viewMode === 'calendar' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}>
+              <CalendarDays size={14} /> קלנדר
             </button>
           </div>
           {/* Week navigation */}
