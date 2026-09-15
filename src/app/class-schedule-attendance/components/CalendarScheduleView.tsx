@@ -118,7 +118,7 @@ export default function CalendarScheduleView({
       </div>
       <div
         ref={scrollRef}
-        className="max-h-[68vh] overflow-auto"
+        className="max-h-[68vh] w-full max-w-full overflow-y-auto overflow-x-hidden"
         style={{ touchAction: 'pan-y' }}
         onTouchStart={(touchEvent) => {
           if (touchEvent.touches.length === 2) {
@@ -138,8 +138,8 @@ export default function CalendarScheduleView({
           pinchStart.current = null;
         }}
       >
-        <div className="min-w-[640px] w-full">
-          <div className="sticky top-0 z-30 grid grid-cols-[48px_repeat(7,minmax(84px,1fr))] border-b border-border bg-card shadow-sm" dir="rtl">
+        <div className="w-full min-w-0 max-w-full">
+          <div className="sticky top-0 z-30 grid grid-cols-[38px_repeat(7,minmax(0,1fr))] border-b border-border bg-card shadow-sm" dir="rtl">
             <div className="sticky right-0 z-40 border-r border-border bg-card" />
             {days.map((day) => {
               const isToday = day.key === dateKey(new Date());
@@ -154,7 +154,7 @@ export default function CalendarScheduleView({
             })}
           </div>
 
-          <div className="grid grid-cols-[48px_repeat(7,minmax(84px,1fr))]" dir="rtl">
+          <div className="grid grid-cols-[38px_repeat(7,minmax(0,1fr))]" dir="rtl">
             <div className="sticky right-0 z-20 relative bg-card" style={{ height: `${timelineHeight}px` }}>
               {hours.map((hour, index) => (
                 <div key={hour} className="relative border-b border-border" style={{ height: `${hourHeights[index]}px` }}>
@@ -195,7 +195,7 @@ export default function CalendarScheduleView({
                       }}
                     >
                       <div className="relative min-w-0">
-                        <p className={`absolute right-0 top-0 z-20 max-w-[150px] truncate rounded bg-inherit px-1 whitespace-nowrap leading-tight font-bold text-foreground ${height < 28 ? 'text-[9px]' : 'text-[10px]'}`} dir="rtl" title={event.title}>{event.title}</p>
+                        <p className={`absolute right-0 top-0 z-20 w-[72px] rounded bg-inherit px-0.5 leading-tight font-bold text-foreground ${height < 28 ? 'text-[8px]' : 'text-[9px]'}`} dir="rtl" title={event.title} style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{event.title}</p>
                         {onDeleteEvent && (
                           <button
                             type="button"
