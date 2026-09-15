@@ -111,17 +111,9 @@ export default function ClassScheduleAttendancePage() {
         event_date: event.date,
         start_time: event.startTime,
         end_time: event.endTime,
-        is_fixed: false,
-        source: 'weekly_paste',
-        allows_attendance_plan: true,
-        counts_for_score: true,
-        score_value: 1,
-        created_by: profile.id,
-        is_active: true,
-        dedupe_key: `${event.title.trim().toLocaleLowerCase()}|${event.date}|${event.startTime}:00|${event.endTime}:00`,
       }));
     if (!rows.length) return;
-    const { error } = await supabase.from('schedule_events').upsert(rows, { onConflict: 'dedupe_key', ignoreDuplicates: true });
+    const { error } = await supabase.rpc('import_schedule_events', { p_events: rows });
     if (error) {
       const message = `${error.message}${error.details ? ` — ${error.details}` : ''}`;
       toast.error(`שמירת הלו״ז נכשלה: ${message}`);
