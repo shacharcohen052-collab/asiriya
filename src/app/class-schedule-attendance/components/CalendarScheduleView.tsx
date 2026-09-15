@@ -57,7 +57,7 @@ export default function CalendarScheduleView({
     <section className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm" dir="rtl">
       <div className="overflow-x-auto">
         <div className="min-w-[900px]">
-          <div className="grid grid-cols-[64px_repeat(7,minmax(118px,1fr))] border-b border-border bg-muted/30" dir="ltr">
+          <div className="grid grid-cols-[64px_repeat(7,minmax(118px,1fr))] border-b border-border bg-muted/30" dir="rtl">
             <div className="border-r border-border" />
             {days.map((day) => {
               const isToday = day.key === dateKey(new Date());
@@ -72,7 +72,7 @@ export default function CalendarScheduleView({
             })}
           </div>
 
-          <div className="grid grid-cols-[64px_repeat(7,minmax(118px,1fr))]" dir="ltr">
+          <div className="grid grid-cols-[64px_repeat(7,minmax(118px,1fr))]" dir="rtl">
             <div className="relative" style={{ height: `${hours.length * HOUR_HEIGHT}px` }}>
               {hours.map((hour) => (
                 <div key={hour} className="relative border-b border-border" style={{ height: `${HOUR_HEIGHT}px` }}>
