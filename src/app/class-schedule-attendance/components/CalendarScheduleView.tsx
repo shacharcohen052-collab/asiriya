@@ -111,10 +111,11 @@ export default function CalendarScheduleView({
                 {(eventsByDay[day.key] ?? []).map((event) => {
                   const start = Math.max(minutes(event.startTime), START_HOUR * 60);
                   const end = Math.min(Math.max(minutes(event.endTime), start + 15), END_HOUR * 60);
-                  const top = ((start - START_HOUR * 60) / 60) * HOUR_HEIGHT;
-                  // Keep short meetings proportional to their real duration:
-                  // a 15-minute event must end exactly on the 12:00 grid line.
-                  const height = Math.max(((end - start) / 60) * HOUR_HEIGHT, 16);
+                  const exactHeight = ((end - start) / 60) * HOUR_HEIGHT;
+                  // Give very short meetings enough visual room while anchoring
+                  // their bottom edge to the real end time (12:00 for PT100).
+                  const height = Math.max(exactHeight, 28);
+                  const top = ((start - START_HOUR * 60) / 60) * HOUR_HEIGHT - (height - exactHeight);
                   return (
                     <div
                       key={event.id}
