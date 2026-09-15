@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, ChevronRight, ChevronLeft, Trash2 } from 'lucide-react';
+import { Plus, ChevronRight, ChevronLeft, Trash2, CalendarDays, List } from 'lucide-react';
 import AddScheduleModal from './AddScheduleModal';
 import type { ScheduleEvent } from './AddScheduleModal';
 
@@ -10,9 +10,11 @@ interface ScheduleHeaderProps {
   onAddEvents: (events: ScheduleEvent[]) => void;
   onClearSchedule: () => void;
   isAdmin: boolean;
+  viewMode: 'calendar' | 'list';
+  onViewModeChange: (mode: 'calendar' | 'list') => void;
 }
 
-export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEvents, onClearSchedule, isAdmin }: ScheduleHeaderProps) {
+export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEvents, onClearSchedule, isAdmin, viewMode, onViewModeChange }: ScheduleHeaderProps) {
   const [showModal, setShowModal] = useState(false);
 
   const getWeekLabel = (offset: number) => {
@@ -37,6 +39,14 @@ export default function ScheduleHeader({ weekOffset, onWeekOffsetChange, onAddEv
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1">
+            <button type="button" onClick={() => onViewModeChange('calendar')} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${viewMode === 'calendar' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}>
+              <CalendarDays size={14} /> קלנדר
+            </button>
+            <button type="button" onClick={() => onViewModeChange('list')} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'}`}>
+              <List size={14} /> רשימה
+            </button>
+          </div>
           {/* Week navigation */}
           <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1">
             <button

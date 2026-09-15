@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import ScheduleHeader from './components/ScheduleHeader';
 import WeekScheduleView from './components/WeekScheduleView';
+import CalendarScheduleView from './components/CalendarScheduleView';
 import CalendarSyncSection from './components/CalendarSyncSection';
 import type { ScheduleEvent } from './components/AddScheduleModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,6 +55,7 @@ export default function ClassScheduleAttendancePage() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const { isAdmin, isApproved, profile } = useAuth();
 
   const loadSchedule = useCallback(async () => {
@@ -150,12 +152,16 @@ export default function ClassScheduleAttendancePage() {
           onAddEvents={addEvents}
           isAdmin={isAdmin}
           onClearSchedule={clearSchedule}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
         {loading ? (
           <div className="bg-card border border-border rounded-xl p-8 text-center text-sm text-muted-foreground">טוען את הלו״ז…</div>
-        ) : (
-          <WeekScheduleView weekOffset={weekOffset} addedEvents={events} showDemoEvents={false} onDeleteEvent={deleteEvent} />
-        )}
+        ) : viewMode === 'calendar' ? (
+            <CalendarScheduleView weekOffset={weekOffset} events={events} onDeleteEvent={deleteEvent} />
+          ) : (
+            <WeekScheduleView weekOffset={weekOffset} addedEvents={events} showDemoEvents={false} onDeleteEvent={deleteEvent} />
+          )}
         <CalendarSyncSection />
       </div>
     </AppLayout>
