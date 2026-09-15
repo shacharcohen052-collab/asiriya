@@ -130,6 +130,17 @@ export default function ClassScheduleAttendancePage() {
     }
   };
 
+  const deleteEvent = async (id: string) => {
+    const { error } = await supabase.rpc('delete_schedule_event', { p_event_id: id });
+    if (error) {
+      toast.error(`מחיקת האירוע נכשלה: ${error.message}`);
+      await loadSchedule();
+      return;
+    }
+    toast.success('האירוע הוסר מהלו״ז');
+    await loadSchedule();
+  };
+
   return (
     <AppLayout activeRoute="/class-schedule-attendance">
       <div className="space-y-6">
@@ -143,7 +154,7 @@ export default function ClassScheduleAttendancePage() {
         {loading ? (
           <div className="bg-card border border-border rounded-xl p-8 text-center text-sm text-muted-foreground">טוען את הלו״ז…</div>
         ) : (
-          <WeekScheduleView weekOffset={weekOffset} addedEvents={events} showDemoEvents={false} />
+          <WeekScheduleView weekOffset={weekOffset} addedEvents={events} showDemoEvents={false} onDeleteEvent={deleteEvent} />
         )}
         <CalendarSyncSection />
       </div>

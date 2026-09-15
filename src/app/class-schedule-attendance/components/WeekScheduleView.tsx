@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Clock, Users, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
+import { Clock, Users, ChevronDown, ChevronUp, Check, X, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ScheduleEvent } from './AddScheduleModal';
 
@@ -227,9 +227,10 @@ interface EventCardProps {
   event: (typeof WEEK_EVENTS)[0];
   onPlanChange: (id: string, plan: string | null) => void;
   onAttendanceReport: (id: string, status: string) => void;
+  onDelete: (id: string) => void;
 }
 
-function EventCard({ event, onPlanChange, onAttendanceReport }: EventCardProps) {
+function EventCard({ event, onPlanChange, onAttendanceReport, onDelete }: EventCardProps) {
   const [showPlanners, setShowPlanners] = useState(false);
   const [showAttendanceForm, setShowAttendanceForm] = useState(false);
 
@@ -272,6 +273,16 @@ function EventCard({ event, onPlanChange, onAttendanceReport }: EventCardProps) 
             </span>
           </div>
         </div>
+        <button
+          onClick={() => {
+            if (window.confirm('להסיר את האירוע הזה מהלו״ז?')) onDelete(event.id);
+          }}
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          title="הסר אירוע"
+          aria-label="הסר אירוע"
+        >
+          <Trash2 size={14} />
+        </button>
 
         {/* Actual attendance badge for past events */}
         {event.isPast && event.myActualAttendance && (
@@ -399,7 +410,7 @@ function groupByDay(events: typeof WEEK_EVENTS) {
   return groups;
 }
 
-export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], showDemoEvents = true }: { weekOffset?: number; addedEvents?: ScheduleEvent[]; showDemoEvents?: boolean }) {
+export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], showDemoEvents = true, onDeleteEvent }: { weekOffset?: number; addedEvents?: ScheduleEvent[]; showDemoEvents?: boolean; onDeleteEvent?: (id: string) => void }) {
   const [events, setEvents] = useState(() => [...(showDemoEvents ? getRelativeWeekEvents(weekOffset) : []), ...addedEvents]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'fixed' | 'imported' | 'score'>('all');
 
@@ -423,6 +434,11 @@ export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], sho
   const handleAttendanceReport = (id: string, status: string) => {
     // Backend integration point: POST /api/actual-attendance { eventId, status }
     setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, myActualAttendance: status } : e)));
+  };
+
+  const handleDelete = (id: string) => {
+    setEvents((prev) => prev.filter((event) => event.id !== id));
+    onDeleteEvent?.(id);
   };
 
   const FILTERS = [
@@ -485,6 +501,7 @@ export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], sho
                         event={event}
                         onPlanChange={handlePlanChange}
                         onAttendanceReport={handleAttendanceReport}
+                        onDelete={handleDelete}
                       />
                     ))}
                 </div>
