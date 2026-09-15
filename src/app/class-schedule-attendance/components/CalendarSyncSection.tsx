@@ -18,7 +18,7 @@ const MOCK_SYNC_STATUS = {
   },
 };
 
-export default function CalendarSyncSection({ events = [] }: { events?: ScheduleEvent[] }) {
+export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { events?: ScheduleEvent[]; weekOffset?: number }) {
   const [googleStatus, setGoogleStatus] = useState(MOCK_SYNC_STATUS.google);
   const [appleStatus] = useState(MOCK_SYNC_STATUS.apple);
   const [syncing, setSyncing] = useState(false);
@@ -41,8 +41,18 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
 
   const handleICSExport = async () => {
     setExporting(true);
-    const plannedEvents = events.filter((event) => event.myPlan && event.myPlan !== 'not_coming');
-    const exportEvents = plannedEvents.length ? plannedEvents : events;
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+    const currentWeekEvents = events.filter((event) => {
+      const eventDate = new Date(`${event.date}T12:00:00`);
+      return eventDate >= weekStart && eventDate < weekEnd;
+    });
+    const plannedEvents = currentWeekEvents.filter((event) => event.myPlan && event.myPlan !== 'not_coming');
+    const exportEvents = plannedEvents.length ? plannedEvents : currentWeekEvents;
     const escapeICS = (value: string) => value.replace(/\\/g, '\\\\').replace(/[,;\n]/g, (match) => match === '\n' ? '\\n' : `\\${match}`);
     const icsDate = (date: string, time: string) => `${date.replace(/-/g, '')}T${time.replace(':', '')}00`;
     const body = [
@@ -73,14 +83,14 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
     anchor.click();
     document.body.removeChild(anchor);
     setExporting(false);
-    toast.success(plannedEvents.length ? `קובץ ICS מוכן (${plannedEvents.length} אירועים).` : `קובץ ICS מוכן (${exportEvents.length} אירועי הלו״ז).`);
+    toast.success(`ייבוא שבוע נוכחי מוכן (${exportEvents.length} אירועים).`);
   };
 
   return (
     <div className="bg-card border border-border rounded-xl p-5 card-shadow fade-in">
-      <h2 className="text-base font-bold text-foreground mb-4">סנכרון יומן אישי</h2>
+      <h2 className="text-base font-bold text-foreground mb-4">ייבוא ליומן</h2>
       <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-        רק אירועים שסימנת שאתה מתכנן להגיע אליהם יתווספו ליומן האישי שלך.
+        ייבוא חד־פעמי של השבוע הנוכחי ליומן האישי שלך. בכל שבוע ניתן לבצע ייבוא מחדש.
       </p>
 
       <div className="space-y-4">
@@ -134,7 +144,7 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
                   ) : (
                     <>
                       <RefreshCw size={13} />
-                      סנכרן עכשיו
+                      ייבא שבוע נוכחי
                     </>
                   )}
                 </button>
@@ -149,7 +159,7 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
             </>
           ) : (
             <button onClick={handleGoogleConnect} className="btn-secondary w-full text-sm py-2">
-              ייצא ל-Google Calendar
+              ייבא שבוע נוכחי ל-Google Calendar
             </button>
           )}
         </div>
@@ -163,13 +173,13 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">Apple Calendar</p>
-                <p className="text-xs text-muted-foreground">ייצוא קובץ ICS אישי</p>
+            <p className="text-xs text-muted-foreground">ייבוא שבוע נוכחי באמצעות קובץ ICS</p>
               </div>
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-            הורד קובץ ICS הכולל רק את האירועים שסימנת שאתה מתכנן להגיע אליהם. פתח אותו ביישום היומן שלך.
+            הורד קובץ ICS של השבוע הנוכחי ופתח אותו ביישום היומן שלך.
           </p>
 
           {appleStatus.lastExport && (
@@ -191,7 +201,7 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
             ) : (
               <>
                 <Download size={14} />
-                ייצא ל-Apple Calendar
+                ייבא שבוע נוכחי ל-Apple Calendar
               </>
             )}
           </button>

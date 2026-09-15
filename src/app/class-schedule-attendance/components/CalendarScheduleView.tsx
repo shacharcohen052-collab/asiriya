@@ -195,7 +195,7 @@ export default function CalendarScheduleView({
                       }}
                     >
                       <div className="relative min-w-0">
-                        <p className={`absolute right-0 top-0 z-20 w-[72px] rounded bg-inherit px-0.5 leading-tight font-bold text-foreground ${height < 28 ? 'text-[8px]' : 'text-[9px]'}`} dir="rtl" title={event.title} style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{event.title}</p>
+                        <p className={`absolute right-0 top-0 z-20 w-full rounded bg-inherit px-0.5 leading-tight font-bold text-foreground ${height < 28 ? 'text-[8px]' : 'text-[9px]'}`} dir="rtl" title={event.title} style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', wordBreak: 'normal', overflowWrap: 'normal', whiteSpace: 'normal' }}>{event.title}</p>
                         {onDeleteEvent && (
                           <button
                             type="button"
