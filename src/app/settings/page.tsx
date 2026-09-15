@@ -164,7 +164,7 @@ export default function SettingsPage() {
                 {calendar.googleSync ? (
                   <><Check size={12} /> מחובר</>
                 ) : (
-                  <><ExternalLink size={12} /> חבר</>
+                  <><ExternalLink size={12} /> חיבור יומן Google — סנכרון</>
                 )}
               </button>
             </div>

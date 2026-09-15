@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { Calendar, Download, Unlink, RefreshCw, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { ScheduleEvent } from './AddScheduleModal';
 
@@ -19,6 +20,7 @@ const MOCK_SYNC_STATUS = {
 };
 
 export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { events?: ScheduleEvent[]; weekOffset?: number }) {
+  const router = useRouter();
   const [googleStatus, setGoogleStatus] = useState(MOCK_SYNC_STATUS.google);
   const [appleStatus] = useState(MOCK_SYNC_STATUS.apple);
   const [syncing, setSyncing] = useState(false);
@@ -102,20 +104,23 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
                 <Calendar size={18} className="text-red-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">Google Calendar</p>
+                <p className="text-sm font-semibold text-foreground">סנכרון יומן Google</p>
                 {googleStatus.connected && (
                   <p className="text-xs text-muted-foreground">{googleStatus.calendarName}</p>
                 )}
               </div>
             </div>
-            <span
-              className={`text-2xs font-semibold px-2.5 py-1 rounded-full ${
+            <button
+              type="button"
+              onClick={() => { if (!googleStatus.connected) router.push('/settings'); }}
+              className={`text-2xs font-semibold px-2.5 py-1 rounded-full transition-colors ${
                 googleStatus.connected
                   ? 'bg-green-50 text-green-700' :'bg-muted text-muted-foreground'
               }`}
+              aria-label={googleStatus.connected ? 'Google Calendar מחובר' : 'פתח הגדרות לחיבור Google Calendar'}
             >
               {googleStatus.connected ? 'מחובר' : 'לא מחובר'}
-            </span>
+            </button>
           </div>
 
           {googleStatus.connected ? (
