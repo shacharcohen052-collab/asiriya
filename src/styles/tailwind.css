@@ -63,6 +63,12 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .app-main {
+    width: 100%;
+    max-width: 680px;
+    margin-inline: auto;
+  }
+
   .text-hero {
     font-size: clamp(1.5rem, 4vw, 2.25rem);
     font-weight: 700;

@@ -138,8 +138,8 @@ export default function CalendarScheduleView({
           pinchStart.current = null;
         }}
       >
-        <div className="min-w-0 w-full">
-          <div className="sticky top-0 z-30 grid grid-cols-[38px_repeat(7,minmax(0,1fr))] border-b border-border bg-card shadow-sm" dir="rtl">
+        <div className="min-w-[640px] w-full">
+          <div className="sticky top-0 z-30 grid grid-cols-[48px_repeat(7,minmax(84px,1fr))] border-b border-border bg-card shadow-sm" dir="rtl">
             <div className="sticky right-0 z-40 border-r border-border bg-card" />
             {days.map((day) => {
               const isToday = day.key === dateKey(new Date());
@@ -154,7 +154,7 @@ export default function CalendarScheduleView({
             })}
           </div>
 
-          <div className="grid grid-cols-[38px_repeat(7,minmax(0,1fr))]" dir="rtl">
+          <div className="grid grid-cols-[48px_repeat(7,minmax(84px,1fr))]" dir="rtl">
             <div className="sticky right-0 z-20 relative bg-card" style={{ height: `${timelineHeight}px` }}>
               {hours.map((hour, index) => (
                 <div key={hour} className="relative border-b border-border" style={{ height: `${hourHeights[index]}px` }}>
