@@ -7,6 +7,7 @@ import {
   Home,
   Users,
   CalendarDays,
+  UsersRound,
   RotateCcw,
   User,
   Settings,
@@ -22,6 +23,7 @@ import { useRouter } from 'next/navigation';
 const NAV_ITEMS = [
   { href: '/', label: 'בית', icon: Home },
   { href: '/class-schedule-attendance', label: 'לו״ז', icon: CalendarDays },
+  { href: '/ten-head', label: 'ראש עשירייה', icon: UsersRound },
   { href: '/members', label: 'חברים', icon: Users },
   { href: '/connection-duties', label: 'תורנים', icon: RotateCcw },
   { href: '/profile', label: 'פרופיל אישי', icon: User },
