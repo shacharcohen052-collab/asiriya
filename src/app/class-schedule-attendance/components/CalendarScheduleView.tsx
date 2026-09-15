@@ -136,8 +136,8 @@ export default function CalendarScheduleView({
       </div>
       <div
         ref={scrollRef}
-        className="max-h-[68vh] w-full max-w-full overflow-x-auto overflow-y-auto"
-        style={{ touchAction: 'pan-y' }}
+        className="max-h-[68vh] w-full max-w-full overflow-x-auto overflow-y-auto overscroll-x-contain"
+        style={{ touchAction: 'pan-x pan-y', WebkitOverflowScrolling: 'touch', direction: 'ltr' }}
         onTouchStart={(touchEvent) => {
           if (touchEvent.touches.length === 2) {
             pinchStart.current = {
@@ -156,7 +156,7 @@ export default function CalendarScheduleView({
           pinchStart.current = null;
         }}
       >
-        <div className="w-full min-w-[680px] max-w-full md:min-w-0">
+        <div className="w-max min-w-[680px] md:w-full md:min-w-0">
           <div className="sticky top-0 z-30 grid grid-cols-[42px_repeat(7,minmax(88px,1fr))] border-b border-border bg-card shadow-sm md:grid-cols-[48px_repeat(7,minmax(0,1fr))]" dir="rtl">
             <div className="sticky right-0 z-40 border-r border-border bg-card" />
             {days.map((day) => {
