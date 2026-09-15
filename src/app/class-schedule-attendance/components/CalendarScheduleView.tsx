@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ScheduleEvent } from './AddScheduleModal';
 
@@ -34,6 +34,7 @@ export default function CalendarScheduleView({
   events: ScheduleEvent[];
   onDeleteEvent?: (id: string) => void;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const days = useMemo(() => {
     const start = weekStart(weekOffset);
     return DAYS.map((label, index) => {
@@ -53,9 +54,13 @@ export default function CalendarScheduleView({
     return groups;
   }, [events]);
 
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [weekOffset]);
+
   return (
     <section className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm" dir="rtl">
-      <div className="max-h-[72vh] overflow-auto">
+      <div ref={scrollRef} className="max-h-[72vh] overflow-auto">
         <div className="min-w-[900px]">
           <div className="sticky top-0 z-30 grid grid-cols-[64px_repeat(7,minmax(118px,1fr))] border-b border-border bg-card shadow-sm" dir="rtl">
             <div className="sticky right-0 z-40 border-r border-border bg-card" />
