@@ -33,6 +33,10 @@ function minutes(time: string) {
   return hours * 60 + mins;
 }
 
+function touchDistance(first: React.Touch, second: React.Touch) {
+  return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
+}
+
 export default function CalendarScheduleView({
   weekOffset,
   events,
@@ -48,7 +52,8 @@ export default function CalendarScheduleView({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
-  const [density, setDensity] = useState<0.7 | 1 | 1.3>(0.7);
+  const [density, setDensity] = useState(0.7);
+  const pinchStart = useRef<{ distance: number; density: number } | null>(null);
   const days = useMemo(() => {
     const start = weekStart(weekOffset);
     return DAYS.map((label, index) => {
@@ -103,7 +108,28 @@ export default function CalendarScheduleView({
           <button type="button" onClick={() => setDensity(1.3)} className={`rounded px-2 py-1 text-xs font-bold ${density === 1.3 ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground'}`} aria-label="הגדל את הקלנדר">+</button>
         </div>
       </div>
-      <div ref={scrollRef} className="max-h-[68vh] overflow-auto">
+      <div
+        ref={scrollRef}
+        className="max-h-[68vh] overflow-auto"
+        style={{ touchAction: 'pan-y' }}
+        onTouchStart={(touchEvent) => {
+          if (touchEvent.touches.length === 2) {
+            pinchStart.current = {
+              distance: touchDistance(touchEvent.touches[0], touchEvent.touches[1]),
+              density,
+            };
+          }
+        }}
+        onTouchMove={(touchEvent) => {
+          if (touchEvent.touches.length === 2 && pinchStart.current) {
+            const distance = touchDistance(touchEvent.touches[0], touchEvent.touches[1]);
+            setDensity(Math.min(1.3, Math.max(0.55, pinchStart.current.density * distance / pinchStart.current.distance)));
+          }
+        }}
+        onTouchEnd={() => {
+          pinchStart.current = null;
+        }}
+      >
         <div className="min-w-0 w-full">
           <div className="sticky top-0 z-30 grid grid-cols-[38px_repeat(7,minmax(0,1fr))] border-b border-border bg-card shadow-sm" dir="rtl">
             <div className="sticky right-0 z-40 border-r border-border bg-card" />
