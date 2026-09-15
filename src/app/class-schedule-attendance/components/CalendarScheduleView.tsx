@@ -7,7 +7,8 @@ import type { ScheduleEvent } from './AddScheduleModal';
 const DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const START_HOUR = 0;
 const END_HOUR = 23;
-const HOUR_HEIGHT = 32;
+const EMPTY_HOUR_HEIGHT = 14;
+const CONTENT_HOUR_HEIGHT = 46;
 const PLAN_OPTIONS = [
   { key: 'routing', label: 'מנתב' },
   { key: 'physical', label: 'פיזית' },
@@ -66,6 +67,24 @@ export default function CalendarScheduleView({
     return groups;
   }, [events]);
 
+  const hourHeights = hours.map((hour) => {
+    const hourStart = hour * 60;
+    const hourEnd = hourStart + 60;
+    const hasContent = events.some((event) => minutes(event.startTime) < hourEnd && minutes(event.endTime) > hourStart);
+    return hasContent ? CONTENT_HOUR_HEIGHT : EMPTY_HOUR_HEIGHT;
+  });
+  const timelineHeight = hourHeights.reduce((sum, height) => sum + height, 0);
+  const positionAt = (value: number) => {
+    const clamped = Math.max(START_HOUR * 60, Math.min(value, (END_HOUR + 1) * 60));
+    let position = 0;
+    hours.forEach((hour, index) => {
+      const start = hour * 60;
+      const end = start + 60;
+      if (clamped > start) position += Math.min(clamped, end) - start > 0 ? (Math.min(clamped, end) - start) / 60 * hourHeights[index] : 0;
+    });
+    return position;
+  };
+
   const selectedIsZoomOnly = selectedEvent ? /זום|עשירייה/i.test(selectedEvent.title) : false;
   const selectedIsPast = selectedEvent ? new Date(`${selectedEvent.date}T${selectedEvent.endTime}`) <= new Date() : false;
 
@@ -93,9 +112,9 @@ export default function CalendarScheduleView({
           </div>
 
           <div className="grid grid-cols-[48px_repeat(7,minmax(84px,1fr))]" dir="rtl">
-            <div className="sticky right-0 z-20 relative bg-card" style={{ height: `${hours.length * HOUR_HEIGHT}px` }}>
-              {hours.map((hour) => (
-                <div key={hour} className="relative border-b border-border" style={{ height: `${HOUR_HEIGHT}px` }}>
+            <div className="sticky right-0 z-20 relative bg-card" style={{ height: `${timelineHeight}px` }}>
+              {hours.map((hour, index) => (
+                <div key={hour} className="relative border-b border-border" style={{ height: `${hourHeights[index]}px` }}>
                   <span className="absolute -top-2 right-2 bg-card px-1 text-[11px] tabular-nums text-muted-foreground">
                     {String(hour).padStart(2, '0')}:00
                   </span>
@@ -104,23 +123,25 @@ export default function CalendarScheduleView({
             </div>
 
             {days.map((day) => (
-              <div key={day.key} className="relative border-r border-border" style={{ height: `${hours.length * HOUR_HEIGHT}px` }}>
-                {hours.map((hour) => (
-                  <div key={hour} className="border-b border-border" style={{ height: `${HOUR_HEIGHT}px` }} />
+              <div key={day.key} className="relative border-r border-border" style={{ height: `${timelineHeight}px` }}>
+                {hours.map((hour, index) => (
+                  <div key={hour} className="border-b border-border" style={{ height: `${hourHeights[index]}px` }} />
                 ))}
                 {(eventsByDay[day.key] ?? []).map((event) => {
                   const start = Math.max(minutes(event.startTime), START_HOUR * 60);
                   const end = Math.min(Math.max(minutes(event.endTime), start + 15), END_HOUR * 60);
-                  const exactHeight = ((end - start) / 60) * HOUR_HEIGHT;
+                  const exactHeight = positionAt(end) - positionAt(start);
                   // Give very short meetings enough visual room while anchoring
                   // their bottom edge to the real end time (12:00 for PT100).
                   const height = Math.max(exactHeight, 28);
-                  const top = ((start - START_HOUR * 60) / 60) * HOUR_HEIGHT - (height - exactHeight);
+                  const top = positionAt(end) - height;
+                  const eventBottom = positionAt(end);
+                  const positionedHeight = Math.max(eventBottom - top, 28);
                   return (
                     <div
                       key={event.id}
                       className={`absolute inset-x-0.5 z-10 overflow-hidden rounded-md border text-right shadow-sm ${height < 28 ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${event.isFixed ? 'border-amber-300 bg-amber-200 text-amber-950' : 'border-blue-200 bg-blue-50'}`}
-                      style={{ top: `${top}px`, height: `${height}px` }}
+                      style={{ top: `${top}px`, height: `${positionedHeight}px` }}
                       dir="rtl"
                       title={`${event.title} ${event.startTime}–${event.endTime}`}
                       role="button"

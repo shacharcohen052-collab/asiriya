@@ -12,7 +12,7 @@ export default function AppLayout({ children, activeRoute }: AppLayoutProps) {
     <MemberAccessGate>
       <div className="min-h-screen bg-background">
         <MobileNav activeRoute={activeRoute} />
-        <main className="mx-auto w-full max-w-[760px] px-3 pt-3 pb-4 sm:px-5 sm:pt-5 page-enter">
+        <main className="mx-auto w-full max-w-[430px] px-3 pt-3 pb-4 page-enter">
           {children}
         </main>
       </div>

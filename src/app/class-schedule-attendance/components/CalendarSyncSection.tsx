@@ -7,10 +7,10 @@ import type { ScheduleEvent } from './AddScheduleModal';
 // Backend integration point: fetch user's calendar sync status from /api/calendar-connections?userId=me
 const MOCK_SYNC_STATUS = {
   google: {
-    connected: true,
-    calendarName: 'לוח השנה האישי שלי',
-    syncedCount: 4,
-    lastSynced: '12/09/2026 17:45',
+    connected: false,
+    calendarName: '',
+    syncedCount: 0,
+    lastSynced: '',
   },
   apple: {
     connected: false,
@@ -24,13 +24,8 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
   const [syncing, setSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  const handleGoogleSync = async () => {
-    setSyncing(true);
-    // Backend integration point: POST /api/calendar/sync { provider: 'google' }
-    await new Promise((r) => setTimeout(r, 1500));
-    setSyncing(false);
-    setGoogleStatus((prev) => ({ ...prev, lastSynced: '12/09/2026 18:08' }));
-    toast.success('הסנכרון עם Google Calendar הושלם.');
+  const handleGoogleSync = () => {
+    void handleICSExport();
   };
 
   const handleGoogleDisconnect = () => {
@@ -40,8 +35,7 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
   };
 
   const handleGoogleConnect = () => {
-    // Backend integration point: GET /api/auth/google/calendar — OAuth flow
-    toast.info('מעביר לחיבור Google Calendar...');
+    void handleICSExport();
   };
 
   const handleICSExport = async () => {
@@ -67,7 +61,11 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = 'asiriya-schedule.ics';
+    anchor.rel = 'noopener';
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
     anchor.click();
+    document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
     setExporting(false);
     toast.success(`קובץ ICS הורד בהצלחה (${plannedEvents.length} אירועים).`);
@@ -146,7 +144,7 @@ export default function CalendarSyncSection({ events = [] }: { events?: Schedule
             </>
           ) : (
             <button onClick={handleGoogleConnect} className="btn-secondary w-full text-sm py-2">
-              חבר Google Calendar
+              ייצא ל-Google Calendar
             </button>
           )}
         </div>
