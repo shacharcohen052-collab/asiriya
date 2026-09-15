@@ -232,7 +232,6 @@ interface EventCardProps {
 
 function EventCard({ event, onPlanChange, onAttendanceReport, onDelete }: EventCardProps) {
   const [showPlanners, setShowPlanners] = useState(false);
-  const [showAttendanceForm, setShowAttendanceForm] = useState(false);
 
   const handlePlanClick = (key: string) => {
     // Backend integration point: POST /api/attendance-plans { eventId, status }
@@ -352,47 +351,28 @@ function EventCard({ event, onPlanChange, onAttendanceReport, onDelete }: EventC
       {/* Personal progress for past events */}
       {event.isPast && event.myActualAttendance === null && (
         <div className="mt-2 pt-2 border-t border-border">
-          {!showAttendanceForm ? (
-            <button
-              onClick={() => setShowAttendanceForm(true)}
-              className="text-xs text-primary font-medium hover:underline"
-            >
-              בדיקת התקדמות אישית: עדכן השתתפות
-            </button>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground font-semibold">האם השתתפת?</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    onAttendanceReport(event.id, 'attended');
-                    setShowAttendanceForm(false);
-                    toast.success('עודכן: השתתפת!');
-                  }}
-                  className="flex items-center gap-1 text-xs bg-green-50 text-green-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors"
-                >
-                  <Check size={12} />
-                  השתתפתי
-                </button>
-                <button
-                  onClick={() => {
-                    onAttendanceReport(event.id, 'not_attended');
-                    setShowAttendanceForm(false);
-                  }}
-                  className="flex items-center gap-1 text-xs bg-muted text-muted-foreground font-semibold px-3 py-1.5 rounded-lg hover:bg-border transition-colors"
-                >
-                  <X size={12} />
-                  לא השתתפתי
-                </button>
-                <button
-                  onClick={() => setShowAttendanceForm(false)}
-                  className="text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 transition-colors"
-                >
-                  אחר כך
-                </button>
-              </div>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-semibold">האם השתתפת?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  onAttendanceReport(event.id, 'attended');
+                  toast.success('עודכן: השתתפת!');
+                }}
+                className="flex items-center gap-1 text-xs bg-green-50 text-green-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors"
+              >
+                <Check size={12} />
+                השתתפתי
+              </button>
+              <button
+                onClick={() => onAttendanceReport(event.id, 'not_attended')}
+                className="flex items-center gap-1 text-xs bg-muted text-muted-foreground font-semibold px-3 py-1.5 rounded-lg hover:bg-border transition-colors"
+              >
+                <X size={12} />
+                לא השתתפתי
+              </button>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
@@ -412,20 +392,13 @@ function groupByDay(events: typeof WEEK_EVENTS) {
 
 export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], showDemoEvents = true, onDeleteEvent }: { weekOffset?: number; addedEvents?: ScheduleEvent[]; showDemoEvents?: boolean; onDeleteEvent?: (id: string) => void }) {
   const [events, setEvents] = useState(() => [...(showDemoEvents ? getRelativeWeekEvents(weekOffset) : []), ...addedEvents]);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'fixed' | 'imported' | 'score'>('all');
+  const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setEvents([...(showDemoEvents ? getRelativeWeekEvents(weekOffset) : []), ...addedEvents]);
   }, [weekOffset, addedEvents, showDemoEvents]);
 
-  const filtered = events.filter((e) => {
-    if (activeFilter === 'fixed') return e.isFixed;
-    if (activeFilter === 'imported') return !e.isFixed;
-    if (activeFilter === 'score') return e.countsForScore;
-    return true;
-  });
-
-  const grouped = groupByDay(filtered);
+  const grouped = groupByDay(events);
 
   const handlePlanChange = (id: string, plan: string | null) => {
     setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, myPlan: plan } : e)));
@@ -441,31 +414,8 @@ export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], sho
     onDeleteEvent?.(id);
   };
 
-  const FILTERS = [
-    { key: 'all', label: 'הכל' },
-    { key: 'fixed', label: 'קבועים' },
-    { key: 'imported', label: 'מיובאים' },
-    { key: 'score', label: 'מזכים בניקוד' },
-  ] as const;
-
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        {FILTERS.map((f) => (
-          <button
-            key={`filter-${f.key}`}
-            onClick={() => setActiveFilter(f.key)}
-            className={`text-sm px-4 py-1.5 rounded-full font-semibold transition-all duration-150 border ${
-              activeFilter === f.key
-                ? 'bg-primary text-white border-primary' :'bg-card text-muted-foreground border-border hover:border-primary/50 hover:text-primary'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
       {/* Day groups */}
       {Object.keys(grouped).length === 0 ? (
         <div className="bg-card border border-border rounded-xl p-8 text-center">
@@ -477,9 +427,17 @@ export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], sho
           .map(([date, dayEvents]) => {
             const first = dayEvents[0];
             const isToday = date === dateKey(new Date());
+            const dayEnd = dayEvents.reduce((latest, event) => event.endTime > latest ? event.endTime : latest, '00:00');
+            const dayIsPast = date < dateKey(new Date()) || (isToday && dayEnd <= new Date().toTimeString().slice(0, 5));
+            const isCollapsed = collapsedDays[date] ?? dayIsPast;
             return (
               <div key={`day-group-${date}`}>
-                <div className={`flex items-center gap-3 mb-2 ${isToday ? '' : ''}`}>
+                <button
+                  type="button"
+                  onClick={() => setCollapsedDays((previous) => ({ ...previous, [date]: !isCollapsed }))}
+                  className={`w-full flex items-center justify-between gap-3 mb-2 text-right ${isToday ? '' : ''}`}
+                  aria-expanded={!isCollapsed}
+                >
                   <div
                     className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${
                       isToday
@@ -490,21 +448,24 @@ export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], sho
                     <span className="font-tabular">{first.dateLabel}</span>
                     {isToday && <span className="text-xs opacity-80">היום</span>}
                   </div>
-                </div>
+                  {isCollapsed ? <ChevronDown size={18} className="text-muted-foreground" /> : <ChevronUp size={18} className="text-muted-foreground" />}
+                </button>
 
-                <div className="space-y-2 mr-2 border-r-2 border-border pr-4">
-                  {dayEvents
-                    .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                    .map((event) => (
-                      <EventCard
-                        key={`week-event-${event.id}`}
-                        event={event}
-                        onPlanChange={handlePlanChange}
-                        onAttendanceReport={handleAttendanceReport}
-                        onDelete={handleDelete}
-                      />
-                    ))}
-                </div>
+                {!isCollapsed && (
+                  <div className="space-y-2 mr-2 border-r-2 border-border pr-4">
+                    {dayEvents
+                      .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                      .map((event) => (
+                        <EventCard
+                          key={`week-event-${event.id}`}
+                          event={event}
+                          onPlanChange={handlePlanChange}
+                          onAttendanceReport={handleAttendanceReport}
+                          onDelete={handleDelete}
+                        />
+                      ))}
+                  </div>
+                )}
               </div>
             );
           })
