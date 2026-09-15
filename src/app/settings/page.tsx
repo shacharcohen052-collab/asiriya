@@ -70,7 +70,6 @@ export default function SettingsPage() {
     autoAddFixed: true,
   });
 
-  const [darkMode, setDarkMode] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
@@ -191,15 +190,13 @@ export default function SettingsPage() {
 
         {/* Appearance */}
         <Section icon={<Moon size={16} className="text-primary" />} title="מראה">
-          <Toggle
-            checked={darkMode}
-            onChange={(v) => {
-              setDarkMode(v);
-              document.documentElement.classList.toggle('dark', v);
-            }}
-            label="מצב כהה (Dark Mode)"
-            description="מתאים לשימוש בשעות הלילה"
-          />
+          <div className="flex items-center justify-between gap-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">מצב תצוגה אוטומטי</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">בהיר ביום, כהה בערב — מתעדכן אוטומטית בשעה 19:00 ובשעה 07:00</p>
+            </div>
+            <div className="shrink-0 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">אוטומטי</div>
+          </div>
         </Section>
 
         {/* Save */}
