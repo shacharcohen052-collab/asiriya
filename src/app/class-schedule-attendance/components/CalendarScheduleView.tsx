@@ -5,7 +5,7 @@ import { Trash2 } from 'lucide-react';
 import type { ScheduleEvent } from './AddScheduleModal';
 
 const DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-const START_HOUR = 5;
+const START_HOUR = 0;
 const END_HOUR = 23;
 const HOUR_HEIGHT = 64;
 
