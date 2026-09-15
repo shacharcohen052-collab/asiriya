@@ -122,11 +122,26 @@ function getWeekDayDate(dayIndex: number) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+function toIsoDate(year: number, month: number, day: number): string | null {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  if (candidate.getUTCFullYear() !== year || candidate.getUTCMonth() !== month - 1 || candidate.getUTCDate() !== day) return null;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function isValidIsoDate(value: string | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  return toIsoDate(year, month, day) !== null;
+}
+
 function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const events: Partial<ScheduleEvent>[] = [];
   const timeRegex = /(\d{1,2}[:.]\d{2})\s*(?:[-–—]|עד|to)\s*(\d{1,2}[:.]\d{2})/i;
-  const dateRegex = /(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?/;
+  // Do not treat a range such as "25-26 ספטמבר" as a numeric date.
+  // Hyphenated dates are accepted only when they contain a year.
+  const dateRegex = /(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?|\b(\d{1,2})-(\d{1,2})-(\d{2,4})\b/;
   const rangeYearRegex = /\b\d{1,2}\s*[–—-]\s*\d{1,2}\s+(?:ב)?([א-ת]+)\s+(\d{4})\b/;
   let currentDate = '';
   let currentYear = new Date().getFullYear();
@@ -146,7 +161,7 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
       const month = HEBREW_MONTHS[hebrewHeader[3]];
       if (hebrewHeader[4]) currentYear = Number(hebrewHeader[4]);
       if (month) {
-        currentDate = `${currentYear}-${String(month).padStart(2, '0')}-${hebrewHeader[2].padStart(2, '0')}`;
+        currentDate = toIsoDate(currentYear, month, Number(hebrewHeader[2])) || '';
       } else if (dayMatch >= 0) {
         currentDate = getWeekDayDate(dayMatch);
       }
@@ -154,8 +169,11 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
       currentDate = getWeekDayDate(dayMatch);
     }
     if (dateMatch) {
-      const yearPart = dateMatch[3] ? (dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3]) : String(new Date().getFullYear());
-      currentDate = `${yearPart}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`;
+      const day = Number(dateMatch[1] || dateMatch[4]);
+      const month = Number(dateMatch[2] || dateMatch[5]);
+      const rawYear = dateMatch[3] || dateMatch[6];
+      const year = rawYear ? Number(rawYear.length === 2 ? `20${rawYear}` : rawYear) : new Date().getFullYear();
+      currentDate = toIsoDate(year, month, day) || '';
     }
     if (timeMatch) {
       const startTime = timeMatch[1].replace('.', ':');
@@ -241,6 +259,10 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
       toast.error('לא נמצאו אירועים. ודא שיש שעות בפורמט HH:MM - HH:MM');
       return;
     }
+    if (events.some((event) => !isValidIsoDate(event.date))) {
+      toast.error('נמצא תאריך לא תקין. בדוק את כותרות הימים והתאריך ונסה שוב.');
+      return;
+    }
     // Add the fixed daily meetings for every imported date.
     const dates = [...new Set(events.map((event) => event.date).filter(Boolean))] as string[];
     const fixedEvents = createFixedEvents(dates);
@@ -292,6 +314,10 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
 
   const handleConfirmPaste = async () => {
     const validEvents = parsed.filter((e): e is ScheduleEvent => !!e.id && !!e.title);
+    if (validEvents.some((event) => !isValidIsoDate(event.date))) {
+      toast.error('אי אפשר לשמור: אחד האירועים מכיל תאריך לא תקין.');
+      return;
+    }
     try {
       await onAdd(validEvents);
       toast.success(`${validEvents.length} אירועים נוספו`);
