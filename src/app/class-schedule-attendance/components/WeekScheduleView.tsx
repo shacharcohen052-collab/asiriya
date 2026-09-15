@@ -232,7 +232,8 @@ interface EventCardProps {
 
 function EventCard({ event, onPlanChange, onAttendanceReport, onDelete }: EventCardProps) {
   const [showPlanners, setShowPlanners] = useState(false);
-  const isZoomOnly = /זום|עשירייה/i.test(event.title);
+  // Only explicit Zoom meetings are virtual-only; a Ten meeting also supports physical attendance.
+  const isZoomOnly = /זום/i.test(event.title);
   const isMeal = /סעודה|חומוס/i.test(event.title);
   const isPreparation = /הכנה/i.test(event.title);
   const accent = isMeal

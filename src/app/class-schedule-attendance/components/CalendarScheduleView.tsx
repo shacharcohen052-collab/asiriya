@@ -112,7 +112,8 @@ export default function CalendarScheduleView({
     return position;
   };
 
-  const selectedIsZoomOnly = selectedEvent ? /זום|עשירייה/i.test(selectedEvent.title) : false;
+  // Only explicit Zoom meetings are virtual-only; a Ten meeting also supports physical attendance.
+  const selectedIsZoomOnly = selectedEvent ? /זום/i.test(selectedEvent.title) : false;
   const selectedIsPast = selectedEvent ? new Date(`${selectedEvent.date}T${selectedEvent.endTime}`) <= new Date() : false;
 
   useEffect(() => {
