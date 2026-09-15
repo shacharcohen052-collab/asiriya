@@ -48,10 +48,10 @@ function calendarTitle(title: string) {
 }
 
 function calendarEventColor(event: ScheduleEvent) {
-  if (/סעודה|חומוס/i.test(event.title)) return 'border-orange-300 bg-orange-200 text-orange-950';
-  if (/הכנה/i.test(event.title)) return 'border-violet-300 bg-violet-200 text-violet-950';
-  if (/עשירייה|זום|PT100/i.test(event.title)) return 'border-fuchsia-300 bg-fuchsia-200 text-fuchsia-950';
-  return event.isFixed ? 'border-sky-300 bg-sky-200 text-sky-950' : 'border-blue-200 bg-blue-50';
+  if (/סעודה|חומוס/i.test(event.title)) return 'border-orange-300 bg-orange-200 text-orange-950 dark:border-orange-700 dark:bg-orange-950/70 dark:text-orange-100';
+  if (/הכנה/i.test(event.title)) return 'border-violet-300 bg-violet-200 text-violet-950 dark:border-violet-700 dark:bg-violet-950/70 dark:text-violet-100';
+  if (/עשירייה|זום|PT100/i.test(event.title)) return 'border-fuchsia-300 bg-fuchsia-200 text-fuchsia-950 dark:border-fuchsia-700 dark:bg-fuchsia-950/70 dark:text-fuchsia-100';
+  return event.isFixed ? 'border-sky-300 bg-sky-200 text-sky-950 dark:border-sky-700 dark:bg-sky-950/70 dark:text-sky-100' : 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/65 dark:text-blue-100';
 }
 
 export default function CalendarScheduleView({

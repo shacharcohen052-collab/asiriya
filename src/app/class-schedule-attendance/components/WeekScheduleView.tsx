@@ -237,12 +237,12 @@ function EventCard({ event, onPlanChange, onAttendanceReport, onDelete }: EventC
   const isMeal = /סעודה|חומוס/i.test(event.title);
   const isPreparation = /הכנה/i.test(event.title);
   const accent = isMeal
-    ? 'border-orange-300 bg-orange-50/70'
+    ? 'border-orange-300 bg-orange-50/70 dark:border-orange-700 dark:bg-orange-950/55'
     : isPreparation
-    ? 'border-violet-300 bg-violet-50/70'
+    ? 'border-violet-300 bg-violet-50/70 dark:border-violet-700 dark:bg-violet-950/55'
     : event.isFixed
-    ? 'border-sky-300 bg-sky-50/70'
-    : 'border-fuchsia-200 bg-fuchsia-50/40';
+    ? 'border-sky-300 bg-sky-50/70 dark:border-sky-700 dark:bg-sky-950/55'
+    : 'border-fuchsia-200 bg-fuchsia-50/40 dark:border-fuchsia-700 dark:bg-fuchsia-950/45';
 
   const handlePlanClick = (key: string) => {
     // Backend integration point: POST /api/attendance-plans { eventId, status }
