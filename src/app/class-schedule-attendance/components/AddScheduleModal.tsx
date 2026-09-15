@@ -30,7 +30,7 @@ interface ConflictInfo {
 
 interface AddScheduleModalProps {
   onClose: () => void;
-  onAdd?: (events: ScheduleEvent[]) => void;
+  onAdd?: (events: ScheduleEvent[]) => void | Promise<void>;
   existingEvents?: ScheduleEvent[];
 }
 
@@ -257,7 +257,7 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
     setStep('preview');
   };
 
-  const handleAddManual = () => {
+  const handleAddManual = async () => {
     if (!manualTitle || !manualDate || !manualStart || !manualEnd) {
       toast.error('מלא את כל השדות');
       return;
@@ -281,16 +281,24 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
       myActualAttendance: null,
       isSynced: false,
     };
-    onAdd([event]);
-    toast.success('אירוע נוסף בהצלחה');
-    onClose();
+    try {
+      await onAdd([event]);
+      toast.success('אירוע נוסף בהצלחה');
+      onClose();
+    } catch {
+      toast.error('שמירת האירוע נכשלה');
+    }
   };
 
-  const handleConfirmPaste = () => {
+  const handleConfirmPaste = async () => {
     const validEvents = parsed.filter((e): e is ScheduleEvent => !!e.id && !!e.title);
-    onAdd(validEvents);
-    toast.success(`${validEvents.length} אירועים נוספו`);
-    onClose();
+    try {
+      await onAdd(validEvents);
+      toast.success(`${validEvents.length} אירועים נוספו`);
+      onClose();
+    } catch {
+      toast.error('שמירת הלו״ז נכשלה — בדוק את הודעת השגיאה ונסה שוב');
+    }
   };
 
   return (

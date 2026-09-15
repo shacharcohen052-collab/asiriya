@@ -88,7 +88,12 @@ export default function ClassScheduleAttendancePage() {
   }, [loadSchedule]);
 
   const addEvents = async (newEvents: ScheduleEvent[]) => {
-    if (!profile?.id || !newEvents.length) return;
+    if (!newEvents.length) return;
+    if (!profile?.id) {
+      const error = new Error('פרופיל המשתמש לא נטען. יש לרענן את הדף ולהתחבר מחדש.');
+      toast.error(error.message);
+      throw error;
+    }
     const rows = newEvents
       .filter((event) => event.date && !event.isFixed)
       .map((event) => ({
@@ -108,8 +113,9 @@ export default function ClassScheduleAttendancePage() {
     if (!rows.length) return;
     const { error } = await supabase.from('schedule_events').upsert(rows, { onConflict: 'dedupe_key', ignoreDuplicates: true });
     if (error) {
-      toast.error('שמירת הלו״ז נכשלה');
-      return;
+      const message = `${error.message}${error.details ? ` — ${error.details}` : ''}`;
+      toast.error(`שמירת הלו״ז נכשלה: ${message}`);
+      throw error;
     }
     toast.success('הלו״ז נשמר ב־Supabase');
     await loadSchedule();
