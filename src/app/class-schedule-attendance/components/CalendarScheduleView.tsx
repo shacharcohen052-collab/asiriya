@@ -37,6 +37,16 @@ function touchDistance(first: React.Touch, second: React.Touch) {
   return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
 }
 
+function calendarTitle(title: string) {
+  if (/הקבלה היומי/.test(title)) return 'שיעור קבלה';
+  if (/צוהריים/.test(title)) return 'שיעור צוהריים';
+  if (/זוהר/.test(title)) return 'שיעור זוהר';
+  if (/PT100/i.test(title)) return 'PT100';
+  if (/עשירייה/.test(title)) return 'עשירייה';
+  if (/הכנה/.test(title)) return 'הכנה';
+  return title;
+}
+
 export default function CalendarScheduleView({
   weekOffset,
   events,
@@ -195,7 +205,7 @@ export default function CalendarScheduleView({
                       }}
                     >
                       <div className="relative min-w-0">
-                        <p className={`absolute right-0 top-0 z-20 w-full rounded bg-inherit px-0.5 leading-tight font-bold text-foreground ${height < 28 ? 'text-[8px]' : 'text-[9px]'}`} dir="rtl" title={event.title} style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', wordBreak: 'normal', overflowWrap: 'normal', whiteSpace: 'normal' }}>{event.title}</p>
+                        <p className={`absolute right-0 top-0 z-20 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded bg-inherit px-0.5 leading-tight font-bold text-foreground ${height < 28 ? 'text-[8px]' : 'text-[9px]'}`} dir="rtl" title={event.title}>{calendarTitle(event.title)}</p>
                         {onDeleteEvent && (
                           <button
                             type="button"
