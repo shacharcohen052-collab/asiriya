@@ -187,7 +187,7 @@ export default function CalendarScheduleView({
                       }}
                     >
                       <div className="flex items-start justify-between gap-1">
-                        <p className={`truncate font-bold text-foreground ${height < 28 ? 'text-[9px]' : 'text-[10px]'}`}>{event.title}</p>
+                        <p className={`min-w-0 break-words whitespace-normal leading-tight font-bold text-foreground ${height < 28 ? 'text-[9px]' : 'text-[10px]'}`} style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: height < 42 ? 2 : 3, overflow: 'hidden' }}>{event.title}</p>
                         {onDeleteEvent && (
                           <button
                             type="button"

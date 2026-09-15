@@ -55,7 +55,11 @@ export default function ClassScheduleAttendancePage() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>(() => {
+    if (typeof window === 'undefined') return 'list';
+    const saved = window.localStorage.getItem('asiriya.schedule.viewMode');
+    return saved === 'calendar' || saved === 'list' ? saved : 'list';
+  });
   const { isAdmin, isApproved, profile } = useAuth();
 
   const loadSchedule = useCallback(async () => {
@@ -88,6 +92,10 @@ export default function ClassScheduleAttendancePage() {
   useEffect(() => {
     void loadSchedule();
   }, [loadSchedule]);
+
+  useEffect(() => {
+    window.localStorage.setItem('asiriya.schedule.viewMode', viewMode);
+  }, [viewMode]);
 
   const addEvents = async (newEvents: ScheduleEvent[]) => {
     if (!newEvents.length) return;

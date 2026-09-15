@@ -428,9 +428,7 @@ export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], sho
           .map(([date, dayEvents]) => {
             const first = dayEvents[0];
             const isToday = date === dateKey(new Date());
-            const dayEnd = dayEvents.reduce((latest, event) => event.endTime > latest ? event.endTime : latest, '00:00');
-            const dayIsPast = date < dateKey(new Date()) || (isToday && dayEnd <= new Date().toTimeString().slice(0, 5));
-            const isCollapsed = collapsedDays[date] ?? dayIsPast;
+            const isCollapsed = collapsedDays[date] ?? !isToday;
             return (
               <div key={`day-group-${date}`}>
                 <button
