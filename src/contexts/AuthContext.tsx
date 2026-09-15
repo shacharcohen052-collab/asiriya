@@ -40,9 +40,7 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
 
@@ -54,46 +52,71 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const supabase = createClient();
 
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('id, email, display_name, role, is_approved, avatar_url, life_work, relationship_status, hobbies, path_duration, connection_strength, desired_quality')
-        .eq('auth_user_id', userId)
-        .eq('is_approved', true)
-        .maybeSingle();
-      if (error) return null;
-      return data as UserProfile | null;
-    } catch {
-      return null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('id, email, display_name, role, is_approved, avatar_url, life_work, relationship_status, hobbies, path_duration, connection_strength, desired_quality')
+          .eq('auth_user_id', userId)
+          .eq('is_approved', true)
+          .maybeSingle();
+        if (!error && data) return data as UserProfile;
+        if (error) console.error('Profile lookup failed', error.message);
+      } catch (error) {
+        console.error('Profile lookup failed', error);
+      }
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
     }
+    return null;
+  };
+
+  const applySession = async (nextSession: any, isMounted: () => boolean) => {
+    if (!isMounted()) return;
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+    setLoading(false);
+
+    if (!nextSession?.user) {
+      setProfile(null);
+      return;
+    }
+
+    setProfile(null);
+    // Do not await this from inside onAuthStateChange. Supabase auth callbacks
+    // must return immediately so the browser session can finish persisting.
+    const nextProfile = await fetchProfile(nextSession.user.id);
+    if (isMounted()) setProfile(nextProfile);
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const p = await fetchProfile(session.user.id);
-        setProfile(p);
-      }
-      setLoading(false);
-    });
+    let mounted = true;
+    const isMounted = () => mounted;
 
+    // The auth listener must stay synchronous. Profile loading happens in the
+    // separate applySession task to avoid deadlocking OAuth session persistence.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const p = await fetchProfile(session.user.id);
-        setProfile(p);
-      } else {
-        setProfile(null);
-      }
-      setLoading(false);
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void applySession(nextSession, isMounted);
     });
 
-    return () => subscription.unsubscribe();
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: currentSession } }) => applySession(currentSession, isMounted))
+      .catch((error) => {
+        console.error('Session lookup failed', error);
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, metadata: Record<string, string> = {}) => {
@@ -101,7 +124,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email,
       password,
       options: {
-        data: { full_name: metadata?.fullName || '' },
+        data: { full_name: metadata.fullName || '' },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -127,12 +150,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) throw error;
   };
 
-  // Google OAuth — uses same email-to-profile matching logic enforced by DB trigger
   const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
@@ -145,13 +167,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(null);
     setUser(null);
     setProfile(null);
+    setLoading(false);
     if (error) throw error;
   };
 
   const getCurrentUser = async () => {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { user: currentUser }, error } = await supabase.auth.getUser();
     if (error) throw error;
-    return user;
+    return currentUser;
   };
 
   const getUserProfile = async (): Promise<UserProfile | null> => {
@@ -161,20 +184,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshProfile = async () => {
     if (!user) return;
-    const p = await fetchProfile(user.id);
-    setProfile(p);
+    setProfile(await fetchProfile(user.id));
   };
-
-  const isApproved = profile?.is_approved === true;
-  const isAdmin = profile?.role === 'admin';
 
   const value: AuthContextType = {
     user,
     session,
     profile,
     loading,
-    isApproved,
-    isAdmin,
+    isApproved: profile?.is_approved === true,
+    isAdmin: profile?.role === 'admin',
     signUp,
     signIn,
     resetPassword,
