@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Calendar, Download, Unlink, RefreshCw, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -26,6 +26,15 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
   const [syncing, setSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/google-calendar/status', { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((status) => { if (active && status) setGoogleStatus(status); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   const handleGoogleSync = () => {
     void handleICSExport();

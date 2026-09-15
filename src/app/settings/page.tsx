@@ -78,7 +78,7 @@ export default function SettingsPage() {
   };
 
   const handleGoogleConnect = () => {
-    alert('חיבור Google Calendar עדיין לא הופעל. נדרשת הגדרת OAuth במערכת — אין צורך להדביק קישור ידני. עד שהחיבור יוגדר, אפשר להשתמש בייבוא השבוע דרך קובץ ICS.');
+    window.location.assign('/api/google-calendar/connect');
   };
 
   return (
