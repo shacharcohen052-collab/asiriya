@@ -55,14 +55,14 @@ export default function CalendarScheduleView({
 
   return (
     <section className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm" dir="rtl">
-      <div className="overflow-x-auto">
+      <div className="max-h-[72vh] overflow-auto">
         <div className="min-w-[900px]">
-          <div className="grid grid-cols-[64px_repeat(7,minmax(118px,1fr))] border-b border-border bg-muted/30" dir="rtl">
-            <div className="border-r border-border" />
+          <div className="sticky top-0 z-30 grid grid-cols-[64px_repeat(7,minmax(118px,1fr))] border-b border-border bg-card shadow-sm" dir="rtl">
+            <div className="sticky right-0 z-40 border-r border-border bg-card" />
             {days.map((day) => {
               const isToday = day.key === dateKey(new Date());
               return (
-                <div key={day.key} className={`min-h-[68px] border-r border-border px-2 py-3 text-center ${isToday ? 'bg-primary/10' : ''}`} dir="rtl">
+                <div key={day.key} className={`min-h-[68px] border-r border-border px-2 py-3 text-center ${isToday ? 'bg-primary/10' : 'bg-card'}`} dir="rtl">
                   <div className="text-xs font-semibold text-muted-foreground">{day.label}</div>
                   <div className={`mx-auto mt-1 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${isToday ? 'bg-primary text-white' : 'text-foreground'}`}>
                     {day.date.getDate()}
@@ -73,7 +73,7 @@ export default function CalendarScheduleView({
           </div>
 
           <div className="grid grid-cols-[64px_repeat(7,minmax(118px,1fr))]" dir="rtl">
-            <div className="relative" style={{ height: `${hours.length * HOUR_HEIGHT}px` }}>
+            <div className="sticky right-0 z-20 relative bg-card" style={{ height: `${hours.length * HOUR_HEIGHT}px` }}>
               {hours.map((hour) => (
                 <div key={hour} className="relative border-b border-border" style={{ height: `${HOUR_HEIGHT}px` }}>
                   <span className="absolute -top-2 right-2 bg-card px-1 text-[11px] tabular-nums text-muted-foreground">
@@ -96,13 +96,13 @@ export default function CalendarScheduleView({
                   return (
                     <div
                       key={event.id}
-                      className={`absolute inset-x-1 z-10 overflow-hidden rounded-lg border px-2 py-1.5 text-right shadow-sm ${event.isFixed ? 'border-primary/30 bg-primary/10' : 'border-blue-200 bg-blue-50'}`}
+                      className={`absolute inset-x-1 z-10 overflow-hidden rounded-lg border text-right shadow-sm ${height < 42 ? 'px-1 py-0.5' : 'px-2 py-1.5'} ${event.isFixed ? 'border-primary/30 bg-primary/10' : 'border-blue-200 bg-blue-50'}`}
                       style={{ top: `${top}px`, height: `${height}px` }}
                       dir="rtl"
                       title={`${event.title} ${event.startTime}–${event.endTime}`}
                     >
                       <div className="flex items-start justify-between gap-1">
-                        <p className="truncate text-xs font-bold text-foreground">{event.title}</p>
+                        <p className={`truncate font-bold text-foreground ${height < 42 ? 'text-[10px]' : 'text-xs'}`}>{event.title}</p>
                         {onDeleteEvent && (
                           <button
                             type="button"

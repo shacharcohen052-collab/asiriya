@@ -232,6 +232,7 @@ interface EventCardProps {
 
 function EventCard({ event, onPlanChange, onAttendanceReport, onDelete }: EventCardProps) {
   const [showPlanners, setShowPlanners] = useState(false);
+  const isZoomOnly = /זום|עשירייה/i.test(event.title);
 
   const handlePlanClick = (key: string) => {
     // Backend integration point: POST /api/attendance-plans { eventId, status }
@@ -298,7 +299,7 @@ function EventCard({ event, onPlanChange, onAttendanceReport, onDelete }: EventC
       {/* Attendance plan chips — only for future events */}
       {event.allowsAttendancePlan && !event.isPast && (
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {PLAN_OPTIONS.map((option) => (
+          {(isZoomOnly ? [{ key: 'virtual', label: 'וירטואלית' }] : PLAN_OPTIONS).map((option) => (
             <button
               key={`chip-${event.id}-${option.key}`}
               onClick={() => handlePlanClick(option.key)}
