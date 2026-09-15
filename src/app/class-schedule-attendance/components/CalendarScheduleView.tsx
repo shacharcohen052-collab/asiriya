@@ -204,8 +204,8 @@ export default function CalendarScheduleView({
                         if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') setSelectedEvent(event);
                       }}
                     >
-                      <div className="relative min-w-0">
-                        <p className={`absolute right-0 top-0 z-20 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded bg-inherit px-0.5 leading-tight font-bold text-foreground ${height < 28 ? 'text-[8px]' : 'text-[9px]'}`} dir="rtl" title={event.title}>{calendarTitle(event.title)}</p>
+                      <div className="relative min-w-0 pr-2">
+                        <p className={`block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap leading-tight font-bold text-foreground ${height < 28 ? 'text-[8px]' : 'text-[9px]'}`} dir="rtl" title={event.title}>{calendarTitle(event.title)}</p>
                         {onDeleteEvent && (
                           <button
                             type="button"
@@ -221,7 +221,7 @@ export default function CalendarScheduleView({
                           </button>
                         )}
                       </div>
-                      {height >= 28 && <p className="text-[9px] text-muted-foreground">{event.startTime}–{event.endTime}</p>}
+                      {height >= 28 && <p className="mt-0.5 block whitespace-nowrap text-[9px] leading-tight text-muted-foreground" dir="ltr">{event.startTime}–{event.endTime}</p>}
                     </div>
                   );
                 })}
