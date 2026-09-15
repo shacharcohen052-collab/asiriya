@@ -183,7 +183,7 @@ export default function CalendarScheduleView({
                   return (
                     <div
                       key={event.id}
-                      className={`absolute inset-x-0.5 z-10 overflow-hidden rounded-md border text-right shadow-sm ${height < 28 ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${event.isFixed ? 'border-amber-300 bg-amber-200 text-amber-950' : 'border-blue-200 bg-blue-50'}`}
+                      className={`absolute inset-x-0.5 z-10 overflow-visible rounded-md border text-right shadow-sm ${height < 28 ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${event.isFixed ? 'border-amber-300 bg-amber-200 text-amber-950' : 'border-blue-200 bg-blue-50'}`}
                       style={{ top: `${top}px`, height: `${positionedHeight}px` }}
                       dir="rtl"
                       title={`${event.title} ${event.startTime}–${event.endTime}`}
@@ -195,7 +195,7 @@ export default function CalendarScheduleView({
                       }}
                     >
                       <div className="relative min-w-0">
-                        <p className={`min-w-0 truncate whitespace-nowrap pl-3 leading-tight font-bold text-foreground ${height < 28 ? 'text-[9px]' : 'text-[10px]'}`} dir="rtl" title={event.title}>{event.title}</p>
+                        <p className={`absolute right-0 top-0 z-20 max-w-[150px] truncate rounded bg-inherit px-1 whitespace-nowrap leading-tight font-bold text-foreground ${height < 28 ? 'text-[9px]' : 'text-[10px]'}`} dir="rtl" title={event.title}>{event.title}</p>
                         {onDeleteEvent && (
                           <button
                             type="button"
