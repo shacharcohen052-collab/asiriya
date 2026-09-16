@@ -32,6 +32,7 @@ export async function POST(request: Request) {
 
   const body = await request.json() as { events?: SyncEvent[] };
   const events = (body.events || []).filter((event) => event.date && event.startTime && event.endTime);
+  if (!events.length) return NextResponse.json({ error: 'no_events_selected' }, { status: 422 });
   const { data: connection, error: connectionError } = await supabase
     .from('calendar_connections')
     .select('access_token, refresh_token, expires_at')
@@ -69,6 +70,10 @@ export async function POST(request: Request) {
     });
     if (response.ok) syncedCount += 1;
     else if (response.status === 401) return NextResponse.json({ error: 'google_authorization_expired' }, { status: 401 });
+    else {
+      const errorBody = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+      return NextResponse.json({ error: 'google_api_error', details: errorBody?.error?.message || `HTTP ${response.status}` }, { status: 502 });
+    }
   }
 
   await supabase.from('calendar_connections').update({ updated_at: new Date().toISOString() }).eq('user_id', user.id).eq('provider', 'google');

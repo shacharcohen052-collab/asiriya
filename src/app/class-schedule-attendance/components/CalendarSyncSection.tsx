@@ -67,7 +67,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
       ]),
       'END:VCALENDAR',
     ].join('\r\n');
-    const url = URL.createObjectURL(new Blob([body], { type: 'text/calendar;charset=utf-8' }));
+    const url = `data:text/calendar;charset=utf-8,${encodeURIComponent(body)}`;
     setDownloadUrl((previous) => {
       if (previous) URL.revokeObjectURL(previous);
       return url;
@@ -75,6 +75,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = `asiriya-schedule-${mode}.ics`;
+    anchor.target = '_blank';
     anchor.style.display = 'none';
     document.body.appendChild(anchor);
     anchor.click();
@@ -92,12 +93,14 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ events: weeklyEvents }),
       });
-      const result = await response.json() as { syncedCount?: number; error?: string };
+      const result = await response.json() as { syncedCount?: number; error?: string; details?: string };
       if (!response.ok) {
         const messages: Record<string, string> = {
           missing_credentials: 'חסרים פרטי OAuth ב-Vercel.',
           google_not_connected: 'יש לחבר קודם את Google Calendar בהגדרות.',
           google_authorization_expired: 'הרשאת Google פגה. יש להתחבר מחדש.',
+          google_api_error: result.details ? `Google דחה את הסנכרון: ${result.details}` : 'Google דחה את הסנכרון. בדוק שה-Calendar API וההרשאה פעילים.',
+          no_events_selected: 'לא נבחרו שיעורים לסנכרון. סמן תכנון הגעה או כבה את הסינון.',
         };
         toast.error(messages[result.error || ''] || 'הסנכרון עם Google Calendar נכשל.');
         return;
@@ -136,7 +139,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
         <button onClick={() => void handleICSExport(exportMode)} disabled={exporting} className="btn-primary w-full text-sm py-2 mt-3">
           {exporting ? <><Loader2 size={14} className="animate-spin" /> מכין קובץ...</> : <><Download size={14} /> הורד את הבחירה ליומן</>}
         </button>
-        {downloadUrl && <p className="mt-3 text-center text-xs text-muted-foreground">הקובץ האחרון מוכן לייבוא ב-Google או Apple Calendar</p>}
+        {downloadUrl && <a href={downloadUrl} target="_blank" rel="noreferrer" className="mt-3 block text-center text-xs font-semibold text-primary hover:underline">פתח את הקובץ ב-Safari לייבוא ליומן</a>}
       </div>
 
       <div className="bg-card border border-border rounded-2xl p-5 card-shadow-md">
