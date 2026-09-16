@@ -5,27 +5,22 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { ScheduleEvent } from './AddScheduleModal';
 
-// Backend integration point: fetch user's calendar sync status from /api/calendar-connections?userId=me
-const MOCK_SYNC_STATUS = {
-  google: {
-    connected: false,
-    calendarName: '',
-    syncedCount: 0,
-    lastSynced: '',
-  },
-  apple: {
-    connected: false,
-    lastExport: null as string | null,
-  },
+const INITIAL_GOOGLE_STATUS = {
+  connected: false,
+  calendarName: '',
+  syncedCount: 0,
+  lastSynced: '',
 };
+
+type ExportMode = 'all' | 'planned';
 
 export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { events?: ScheduleEvent[]; weekOffset?: number }) {
   const router = useRouter();
-  const [googleStatus, setGoogleStatus] = useState(MOCK_SYNC_STATUS.google);
-  const [appleStatus] = useState(MOCK_SYNC_STATUS.apple);
+  const [googleStatus, setGoogleStatus] = useState(INITIAL_GOOGLE_STATUS);
   const [syncing, setSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [exportMode, setExportMode] = useState<ExportMode | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -36,24 +31,61 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
     return () => { active = false; };
   }, []);
 
-  const handleGoogleSync = () => {
-    void handleGoogleCalendarSync();
+  const getWeeklyEvents = (mode: ExportMode): ScheduleEvent[] => {
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+    const currentWeekEvents = events.filter((event) => {
+      const eventDate = new Date(`${event.date}T12:00:00`);
+      return eventDate >= weekStart && eventDate < weekEnd;
+    });
+    return mode === 'planned'
+      ? currentWeekEvents.filter((event) => Boolean(event.myPlan) && event.myPlan !== 'not_coming')
+      : currentWeekEvents;
   };
 
-  const handleGoogleDisconnect = () => {
-    // Backend integration point: DELETE /api/calendar-connections?provider=google
-    toast.success('הסנכרון נותק בהצלחה.');
-    setGoogleStatus({ connected: false, calendarName: '', syncedCount: 0, lastSynced: '' });
-  };
-
-  const handleGoogleConnect = () => {
-    router.push('/settings#google-calendar');
+  const handleICSExport = async (mode: ExportMode) => {
+    setExporting(true);
+    setExportMode(mode);
+    const exportEvents = getWeeklyEvents(mode);
+    const escapeICS = (value: string) => value.replace(/\\/g, '\\\\').replace(/[,;\n]/g, (match) => match === '\n' ? '\\n' : `\\${match}`);
+    const icsDate = (date: string, time: string) => `${date.replace(/-/g, '')}T${time.replace(':', '')}00`;
+    const body = [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Asiriya//Schedule//HE', 'CALSCALE:GREGORIAN',
+      ...exportEvents.flatMap((event) => [
+        'BEGIN:VEVENT',
+        `UID:${event.id}@asiriya`,
+        `DTSTART:${icsDate(event.date, event.startTime)}`,
+        `DTEND:${icsDate(event.date, event.endTime)}`,
+        `SUMMARY:${escapeICS(event.title)}`,
+        `DESCRIPTION:${escapeICS(`תכנון הגעה: ${event.myPlan || 'לא סומן'}`)}`,
+        'END:VEVENT',
+      ]),
+      'END:VCALENDAR',
+    ].join('\r\n');
+    const url = URL.createObjectURL(new Blob([body], { type: 'text/calendar;charset=utf-8' }));
+    setDownloadUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return url;
+    });
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `asiriya-schedule-${mode}.ics`;
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    setExporting(false);
+    toast.success(`${mode === 'planned' ? 'הלוז שאישרת' : 'הלו״ז המלא'} יוצא ליומן (${exportEvents.length} אירועים).`);
   };
 
   const handleGoogleCalendarSync = async () => {
     setSyncing(true);
     try {
-      const weeklyEvents = getWeeklyExportEvents();
+      const weeklyEvents = getWeeklyEvents('planned');
       const response = await fetch('/api/google-calendar/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,7 +102,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
         return;
       }
       setGoogleStatus((previous) => ({ ...previous, connected: true, syncedCount: result.syncedCount || 0, lastSynced: new Date().toISOString() }));
-      toast.success(`סונכרנו ${result.syncedCount || 0} אירועים ל-Google Calendar.`);
+      toast.success(`סונכרנו ${result.syncedCount || 0} אירועים שאישרת ל-Google Calendar.`);
     } catch {
       toast.error('לא ניתן להתחבר ל-Google Calendar כרגע.');
     } finally {
@@ -78,160 +110,52 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
     }
   };
 
-  const getWeeklyExportEvents = () => {
-    const today = new Date();
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7);
-    weekStart.setHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 7);
-    const currentWeekEvents = events.filter((event) => {
-      const eventDate = new Date(`${event.date}T12:00:00`);
-      return eventDate >= weekStart && eventDate < weekEnd;
-    });
-    const plannedEvents = currentWeekEvents.filter((event) => event.myPlan && event.myPlan !== 'not_coming');
-    return plannedEvents.length ? plannedEvents : currentWeekEvents;
+  const disconnectGoogle = () => {
+    toast.success('הסנכרון נותק בהצלחה.');
+    setGoogleStatus(INITIAL_GOOGLE_STATUS);
   };
 
-  const handleICSExport = async () => {
-    setExporting(true);
-    const exportEvents = getWeeklyExportEvents();
-    const escapeICS = (value: string) => value.replace(/\\/g, '\\\\').replace(/[,;\n]/g, (match) => match === '\n' ? '\\n' : `\\${match}`);
-    const icsDate = (date: string, time: string) => `${date.replace(/-/g, '')}T${time.replace(':', '')}00`;
-    const body = [
-      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Asiriya//Schedule//HE', 'CALSCALE:GREGORIAN',
-      ...exportEvents.flatMap((event) => [
-        'BEGIN:VEVENT',
-        `UID:${event.id}@asiriya`,
-        `DTSTART:${icsDate(event.date, event.startTime)}`,
-        `DTEND:${icsDate(event.date, event.endTime)}`,
-        `SUMMARY:${escapeICS(event.title)}`,
-        `DESCRIPTION:${escapeICS(`תכנון הגעה: ${event.myPlan}`)}`,
-        'END:VEVENT',
-      ]),
-      'END:VCALENDAR',
-    ].join('\r\n');
-    const blob = new Blob([body], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    setDownloadUrl((previous) => {
-      if (previous) URL.revokeObjectURL(previous);
-      return url;
-    });
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = 'asiriya-schedule.ics';
-    anchor.rel = 'noopener';
-    anchor.style.display = 'none';
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    setExporting(false);
-    toast.success(`ייבוא שבוע נוכחי מוכן (${exportEvents.length} אירועים).`);
-  };
+  const importButton = (mode: ExportMode) => (
+    <button onClick={() => void handleICSExport(mode)} disabled={exporting} className="btn-primary w-full text-sm py-2">
+      {exporting && exportMode === mode ? <><Loader2 size={14} className="animate-spin" /> מכין קובץ...</> : <><Download size={14} /> {mode === 'all' ? 'ייבוא הלו״ז המלא' : 'ייבוא הלוז שאישרתי הגעה'}</>}
+    </button>
+  );
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 card-shadow-md fade-in">
-      <div className="space-y-4">
-        {/* One-time Google import */}
-        <div className="border border-border rounded-xl p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
-              <Calendar size={18} className="text-red-500" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">ייבוא חד־פעמי ל-Google Calendar</p>
-              <p className="text-xs text-muted-foreground">קובץ לשבוע הנוכחי בלבד</p>
-            </div>
+    <div className="space-y-4 fade-in">
+      <div className="bg-card border border-border rounded-2xl p-5 card-shadow-md">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center"><Download size={18} className="text-primary" /></div>
+          <div>
+            <h2 className="text-base font-bold text-foreground">ייבוא הלוז</h2>
+            <p className="text-xs text-muted-foreground">בחר איזה תוכן להוריד ליומן לשבוע הנוכחי</p>
           </div>
-          <button onClick={handleICSExport} disabled={exporting} className="btn-secondary w-full text-sm py-2">
-            {exporting ? <><Loader2 size={14} className="animate-spin" /> מכין קובץ...</> : <><Download size={14} /> הורד קובץ ל-Google</>}
-          </button>
-          {downloadUrl && <a href={downloadUrl} download="asiriya-schedule.ics" className="mt-2 block text-center text-xs font-semibold text-primary hover:underline">פתח קישור ייבוא ל-Google</a>}
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">{importButton('all')}{importButton('planned')}</div>
+        {downloadUrl && <p className="mt-3 text-center text-xs text-muted-foreground">הקובץ האחרון מוכן לייבוא ב-Google או Apple Calendar</p>}
+      </div>
 
-        {/* One-time Apple import */}
-        <div className="border border-border rounded-xl p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Calendar size={18} className="text-blue-500" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">ייבוא חד־פעמי ל-Apple Calendar</p>
-              <p className="text-xs text-muted-foreground">קובץ ICS לשבוע הנוכחי</p>
-            </div>
-          </div>
-          <button onClick={handleICSExport} disabled={exporting} className="btn-secondary w-full text-sm py-2">
-            {exporting ? <><Loader2 size={14} className="animate-spin" /> מכין קובץ...</> : <><Download size={14} /> הורד קובץ ל-Apple</>}
+      <div className="bg-card border border-border rounded-2xl p-5 card-shadow-md">
+        <h2 className="text-sm font-bold text-foreground mb-3">ייבוא השבוע הנוכחי ליומנים</h2>
+        <div className="divide-y divide-border">
+          <button onClick={() => void handleICSExport('all')} disabled={exporting} className="flex w-full items-center justify-between py-3 text-right hover:bg-muted/40 rounded-lg px-2">
+            <span><span className="block text-sm font-semibold text-foreground">ייבוא השבוע הנוכחי ליומן Google</span><span className="block text-xs text-muted-foreground">קובץ ICS לייבוא ידני</span></span><Calendar size={18} className="text-red-500" />
           </button>
-          {downloadUrl && <a href={downloadUrl} download="asiriya-schedule.ics" className="mt-2 block text-center text-xs font-semibold text-primary hover:underline">פתח קישור ייבוא ל-Apple</a>}
-        </div>
-
-        {/* Automatic Google sync */}
-        <div className="border border-primary/20 bg-primary/[0.03] rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
-                <RefreshCw size={18} className="text-red-500" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">סנכרון אוטומטי ל-Google Calendar</p>
-                <p className="text-xs text-muted-foreground">עדכון ישיר של אירועי השבוע ביומן שלך</p>
-              </div>
-            </div>
-            <button type="button" onClick={() => { if (!googleStatus.connected) router.push('/settings#google-calendar'); }} className={`text-2xs font-semibold px-2.5 py-1 rounded-full ${googleStatus.connected ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'}`}>
-              {googleStatus.connected ? 'מחובר' : 'לא מחובר'}
-            </button>
-          </div>
-          {googleStatus.connected ? (
-            <>
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="bg-muted rounded-lg p-2 text-center">
-                  <p className="text-sm font-bold text-foreground font-tabular">{googleStatus.syncedCount}</p>
-                  <p className="text-2xs text-muted-foreground">אירועים מסונכרנים</p>
-                </div>
-                <div className="bg-muted rounded-lg p-2 text-center">
-                  <p className="text-xs font-semibold text-foreground font-tabular">{googleStatus.lastSynced}</p>
-                  <p className="text-2xs text-muted-foreground">סנכרון אחרון</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleGoogleSync}
-                  disabled={syncing}
-                  className="btn-primary text-xs py-2 flex-1"
-                >
-                  {syncing ? (
-                    <>
-                      <Loader2 size={13} className="animate-spin" />
-                      מסנכרן...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw size={13} />
-                      סנכרן את השבוע עכשיו
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={handleGoogleDisconnect}
-                  className="btn-ghost text-xs py-2 px-3 text-destructive hover:bg-red-50"
-                >
-                  <Unlink size={13} />
-                  נתק
-                </button>
-              </div>
-            </>
-          ) : (
-            <button onClick={handleGoogleConnect} className="btn-secondary w-full text-sm py-2">
-              חבר את Google Calendar והפעל סנכרון
-            </button>
-          )}
+          <button onClick={() => void handleICSExport('all')} disabled={exporting} className="flex w-full items-center justify-between py-3 text-right hover:bg-muted/40 rounded-lg px-2">
+            <span><span className="block text-sm font-semibold text-foreground">ייבוא השבוע ליומן Apple</span><span className="block text-xs text-muted-foreground">קובץ ICS לייבוא ידני</span></span><Calendar size={18} className="text-blue-500" />
+          </button>
         </div>
       </div>
 
-      <p className="text-2xs text-muted-foreground mt-4">
-        היומן החיצוני שלך פרטי לחלוטין. האפליקציה לא קוראת אירועים אחרים מהיומן שלך.
-      </p>
+      <div className="bg-card border border-primary/20 rounded-2xl p-5 card-shadow-md">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center"><RefreshCw size={18} className="text-red-500" /></div><div><h2 className="text-sm font-bold text-foreground">סנכרון יומן Google</h2><p className="text-xs text-muted-foreground">סנכרון האירועים שאישרת הגעה אליהם</p></div></div>
+          <button type="button" onClick={() => { if (!googleStatus.connected) router.push('/settings#google-calendar'); }} className={`text-2xs font-semibold px-2.5 py-1 rounded-full ${googleStatus.connected ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'}`}>{googleStatus.connected ? 'מחובר' : 'לא מחובר'}</button>
+        </div>
+        {googleStatus.connected ? <div className="flex gap-2"><button onClick={() => void handleGoogleCalendarSync()} disabled={syncing} className="btn-primary text-xs py-2 flex-1">{syncing ? <><Loader2 size={13} className="animate-spin" /> מסנכרן...</> : <><RefreshCw size={13} /> סנכרן אירועים שאישרתי</>}</button><button onClick={disconnectGoogle} className="btn-ghost text-xs py-2 px-3 text-destructive"><Unlink size={13} /> נתק</button></div> : <button onClick={() => router.push('/settings#google-calendar')} className="btn-secondary w-full text-sm py-2">חבר את Google Calendar</button>}
+      </div>
+
+      <p className="text-2xs text-muted-foreground">היומן החיצוני שלך פרטי לחלוטין. האפליקציה לא קוראת אירועים אחרים מהיומן שלך.</p>
     </div>
   );
 }
