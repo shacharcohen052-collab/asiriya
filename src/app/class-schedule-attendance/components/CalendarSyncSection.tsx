@@ -131,43 +131,57 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5 card-shadow-md fade-in">
-      <h2 className="text-base font-bold text-foreground mb-4">סנכרון וייבוא ליומנים</h2>
-      <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-        <span className="font-semibold text-foreground">סנכרון אוטומטי ל-Google Calendar</span>
-        <br />
-        או
-        <br />
-        <span className="font-semibold text-foreground">ייבוא חד־פעמי שבועי ליומני Google ו-Apple</span>
-      </p>
-
       <div className="space-y-4">
-        {/* Google Calendar */}
+        {/* One-time Google import */}
         <div className="border border-border rounded-xl p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
+              <Calendar size={18} className="text-red-500" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">ייבוא חד־פעמי ל-Google Calendar</p>
+              <p className="text-xs text-muted-foreground">קובץ לשבוע הנוכחי בלבד</p>
+            </div>
+          </div>
+          <button onClick={handleICSExport} disabled={exporting} className="btn-secondary w-full text-sm py-2">
+            {exporting ? <><Loader2 size={14} className="animate-spin" /> מכין קובץ...</> : <><Download size={14} /> הורד קובץ ל-Google</>}
+          </button>
+          {downloadUrl && <a href={downloadUrl} download="asiriya-schedule.ics" className="mt-2 block text-center text-xs font-semibold text-primary hover:underline">פתח קישור ייבוא ל-Google</a>}
+        </div>
+
+        {/* One-time Apple import */}
+        <div className="border border-border rounded-xl p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+              <Calendar size={18} className="text-blue-500" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">ייבוא חד־פעמי ל-Apple Calendar</p>
+              <p className="text-xs text-muted-foreground">קובץ ICS לשבוע הנוכחי</p>
+            </div>
+          </div>
+          <button onClick={handleICSExport} disabled={exporting} className="btn-secondary w-full text-sm py-2">
+            {exporting ? <><Loader2 size={14} className="animate-spin" /> מכין קובץ...</> : <><Download size={14} /> הורד קובץ ל-Apple</>}
+          </button>
+          {downloadUrl && <a href={downloadUrl} download="asiriya-schedule.ics" className="mt-2 block text-center text-xs font-semibold text-primary hover:underline">פתח קישור ייבוא ל-Apple</a>}
+        </div>
+
+        {/* Automatic Google sync */}
+        <div className="border border-primary/20 bg-primary/[0.03] rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
-                <Calendar size={18} className="text-red-500" />
+                <RefreshCw size={18} className="text-red-500" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">סנכרון אוטומטי ל-Google Calendar</p>
-                {googleStatus.connected && (
-                  <p className="text-xs text-muted-foreground">{googleStatus.calendarName}</p>
-                )}
+                <p className="text-xs text-muted-foreground">עדכון ישיר של אירועי השבוע ביומן שלך</p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => { if (!googleStatus.connected) router.push('/settings#google-calendar'); }}
-              className={`text-2xs font-semibold px-2.5 py-1 rounded-full transition-colors ${
-                googleStatus.connected
-                  ? 'bg-green-50 text-green-700' :'bg-muted text-muted-foreground'
-              }`}
-              aria-label={googleStatus.connected ? 'Google Calendar מחובר' : 'פתח הגדרות לחיבור Google Calendar'}
-            >
+            <button type="button" onClick={() => { if (!googleStatus.connected) router.push('/settings#google-calendar'); }} className={`text-2xs font-semibold px-2.5 py-1 rounded-full ${googleStatus.connected ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'}`}>
               {googleStatus.connected ? 'מחובר' : 'לא מחובר'}
             </button>
           </div>
-
           {googleStatus.connected ? (
             <>
               <div className="grid grid-cols-2 gap-2 mb-3">
@@ -194,7 +208,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
                   ) : (
                     <>
                       <RefreshCw size={13} />
-                      סנכרן את השבוע ל-Google Calendar
+                      סנכרן את השבוע עכשיו
                     </>
                   )}
                 </button>
@@ -209,67 +223,8 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
             </>
           ) : (
             <button onClick={handleGoogleConnect} className="btn-secondary w-full text-sm py-2">
-              הפעל סנכרון אוטומטי ל-Google Calendar
+              חבר את Google Calendar והפעל סנכרון
             </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3 py-0.5" aria-hidden="true">
-          <div className="h-px flex-1 bg-border" />
-          <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">או</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-
-        {/* Apple Calendar / ICS */}
-        <div className="border border-border rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Calendar size={18} className="text-blue-500" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">ייבוא חד־פעמי שבועי ליומני Google / Apple</p>
-                <p className="text-xs text-muted-foreground">בחר קישור לחיץ להורדת השבוע הנוכחי ולייבוא ידני ליומן</p>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-            הורד קובץ ICS של השבוע הנוכחי ופתח אותו ביישום היומן שלך.
-          </p>
-
-          {appleStatus.lastExport && (
-            <p className="text-2xs text-muted-foreground mb-2">
-              ייצוא אחרון: {appleStatus.lastExport}
-            </p>
-          )}
-
-          <button
-            onClick={handleICSExport}
-            disabled={exporting}
-            className="btn-secondary w-full text-sm py-2"
-          >
-            {exporting ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                מכין קובץ...
-              </>
-            ) : (
-              <>
-                <Download size={14} />
-                ייבוא שבוע נוכחי ל-Apple Calendar
-              </>
-            )}
-          </button>
-          {downloadUrl && (
-            <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs font-semibold">
-              <a href={downloadUrl} download="asiriya-schedule.ics" className="rounded-lg border border-primary/20 bg-primary/5 px-2 py-2 text-primary hover:bg-primary/10">
-                קישור ייבוא ל-Google
-              </a>
-              <a href={downloadUrl} download="asiriya-schedule.ics" className="rounded-lg border border-primary/20 bg-primary/5 px-2 py-2 text-primary hover:bg-primary/10">
-                קישור ייבוא ל-Apple
-              </a>
-            </div>
           )}
         </div>
       </div>

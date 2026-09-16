@@ -66,7 +66,7 @@ export async function GET(request: Request) {
     access_token: token.access_token,
     refresh_token: token.refresh_token || existing?.refresh_token || null,
     expires_at: token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : null,
-    scope: token.scope || 'https://www.googleapis.com/auth/calendar.events.owned',
+    scope: token.scope || 'https://www.googleapis.com/auth/calendar.events',
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id,provider' });
 

@@ -33,7 +33,7 @@ export async function GET(request: Request) {
   authUrl.searchParams.set('access_type', 'offline');
   authUrl.searchParams.set('prompt', 'consent');
   authUrl.searchParams.set('include_granted_scopes', 'true');
-  authUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/calendar.events.owned');
+  authUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/calendar.events');
   authUrl.searchParams.set('state', state);
 
   return NextResponse.redirect(authUrl);
