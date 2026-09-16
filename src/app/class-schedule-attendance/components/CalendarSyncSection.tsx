@@ -37,7 +37,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
   }, []);
 
   const handleGoogleSync = () => {
-    void handleICSExport();
+    void handleGoogleCalendarSync();
   };
 
   const handleGoogleDisconnect = () => {
@@ -47,7 +47,34 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
   };
 
   const handleGoogleConnect = () => {
-    void handleICSExport();
+    router.push('/settings#google-calendar');
+  };
+
+  const handleGoogleCalendarSync = async () => {
+    setSyncing(true);
+    try {
+      const response = await fetch('/api/google-calendar/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ events }),
+      });
+      const result = await response.json() as { syncedCount?: number; error?: string };
+      if (!response.ok) {
+        const messages: Record<string, string> = {
+          missing_credentials: 'חסרים פרטי OAuth ב-Vercel.',
+          google_not_connected: 'יש לחבר קודם את Google Calendar בהגדרות.',
+          google_authorization_expired: 'הרשאת Google פגה. יש להתחבר מחדש.',
+        };
+        toast.error(messages[result.error || ''] || 'הסנכרון עם Google Calendar נכשל.');
+        return;
+      }
+      setGoogleStatus((previous) => ({ ...previous, connected: true, syncedCount: result.syncedCount || 0, lastSynced: new Date().toISOString() }));
+      toast.success(`סונכרנו ${result.syncedCount || 0} אירועים ל-Google Calendar.`);
+    } catch {
+      toast.error('לא ניתן להתחבר ל-Google Calendar כרגע.');
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleICSExport = async () => {
@@ -173,7 +200,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
             </>
           ) : (
             <button onClick={handleGoogleConnect} className="btn-secondary w-full text-sm py-2">
-              ייבא שבוע נוכחי ל-Google Calendar
+              חבר את Google Calendar בהגדרות
             </button>
           )}
         </div>
