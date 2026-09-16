@@ -126,9 +126,9 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5 card-shadow-md fade-in">
-      <h2 className="text-base font-bold text-foreground mb-4">ייבוא ליומן</h2>
+      <h2 className="text-base font-bold text-foreground mb-4">יומנים</h2>
       <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-        ייבוא חד־פעמי של השבוע הנוכחי ליומן האישי שלך. בכל שבוע ניתן לבצע ייבוא מחדש.
+        בחר איך להוסיף את לוח השבוע ליומן האישי שלך: ייבוא חד־פעמי או סנכרון קבוע עם Google Calendar.
       </p>
 
       <div className="space-y-4">
@@ -185,7 +185,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
                   ) : (
                     <>
                       <RefreshCw size={13} />
-                      ייבא שבוע נוכחי
+                      סנכרן שבוע נוכחי
                     </>
                   )}
                 </button>
@@ -200,9 +200,15 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
             </>
           ) : (
             <button onClick={handleGoogleConnect} className="btn-secondary w-full text-sm py-2">
-              חבר את Google Calendar בהגדרות
+              חיבור וסנכרון ביומן Google
             </button>
           )}
+        </div>
+
+        <div className="flex items-center gap-3 py-0.5" aria-hidden="true">
+          <div className="h-px flex-1 bg-border" />
+          <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">או</span>
+          <div className="h-px flex-1 bg-border" />
         </div>
 
         {/* Apple Calendar / ICS */}
@@ -213,8 +219,8 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
                 <Calendar size={18} className="text-blue-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">Apple Calendar</p>
-            <p className="text-xs text-muted-foreground">ייבוא שבוע נוכחי באמצעות קובץ ICS</p>
+                <p className="text-sm font-semibold text-foreground">ייבוא ליומן</p>
+            <p className="text-xs text-muted-foreground">קובץ ICS לשימוש ב-Apple Calendar או בכל יומן אחר</p>
               </div>
             </div>
           </div>
@@ -242,7 +248,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
             ) : (
               <>
                 <Download size={14} />
-                ייבא שבוע נוכחי ל-Apple Calendar
+                ייבוא שבוע נוכחי
               </>
             )}
           </button>
