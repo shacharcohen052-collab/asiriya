@@ -20,7 +20,8 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
   const [syncing, setSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
-  const [exportMode, setExportMode] = useState<ExportMode | null>(null);
+  const [exportMode, setExportMode] = useState<ExportMode>('all');
+  const [syncPlannedOnly, setSyncPlannedOnly] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -85,7 +86,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
   const handleGoogleCalendarSync = async () => {
     setSyncing(true);
     try {
-      const weeklyEvents = getWeeklyEvents('planned');
+      const weeklyEvents = getWeeklyEvents(syncPlannedOnly ? 'planned' : 'all');
       const response = await fetch('/api/google-calendar/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,7 +103,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
         return;
       }
       setGoogleStatus((previous) => ({ ...previous, connected: true, syncedCount: result.syncedCount || 0, lastSynced: new Date().toISOString() }));
-      toast.success(`סונכרנו ${result.syncedCount || 0} אירועים שאישרת ל-Google Calendar.`);
+      toast.success(`סונכרנו ${result.syncedCount || 0} אירועים ל-Google Calendar.`);
     } catch {
       toast.error('לא ניתן להתחבר ל-Google Calendar כרגע.');
     } finally {
@@ -115,12 +116,6 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
     setGoogleStatus(INITIAL_GOOGLE_STATUS);
   };
 
-  const importButton = (mode: ExportMode) => (
-    <button onClick={() => void handleICSExport(mode)} disabled={exporting} className="btn-primary w-full text-sm py-2">
-      {exporting && exportMode === mode ? <><Loader2 size={14} className="animate-spin" /> מכין קובץ...</> : <><Download size={14} /> {mode === 'all' ? 'ייבוא הלו״ז המלא' : 'ייבוא הלוז שאישרתי הגעה'}</>}
-    </button>
-  );
-
   return (
     <div className="space-y-4 fade-in">
       <div className="bg-card border border-border rounded-2xl p-5 card-shadow-md">
@@ -131,7 +126,16 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
             <p className="text-xs text-muted-foreground">בחר איזה תוכן להוריד ליומן לשבוע הנוכחי</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">{importButton('all')}{importButton('planned')}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+          {(['all', 'planned'] as ExportMode[]).map((mode) => (
+            <button key={mode} type="button" onClick={() => setExportMode(mode)} className={`rounded-xl border px-3 py-3 text-sm font-semibold transition-colors ${exportMode === mode ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted'}`}>
+              {mode === 'all' ? 'לוז מלא' : 'לוז שאישרתי הגעה'}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => void handleICSExport(exportMode)} disabled={exporting} className="btn-primary w-full text-sm py-2 mt-3">
+          {exporting ? <><Loader2 size={14} className="animate-spin" /> מכין קובץ...</> : <><Download size={14} /> הורד את הבחירה ליומן</>}
+        </button>
         {downloadUrl && <p className="mt-3 text-center text-xs text-muted-foreground">הקובץ האחרון מוכן לייבוא ב-Google או Apple Calendar</p>}
       </div>
 
@@ -152,7 +156,11 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
           <div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center"><RefreshCw size={18} className="text-red-500" /></div><div><h2 className="text-sm font-bold text-foreground">סנכרון יומן Google</h2><p className="text-xs text-muted-foreground">סנכרון האירועים שאישרת הגעה אליהם</p></div></div>
           <button type="button" onClick={() => { if (!googleStatus.connected) router.push('/settings#google-calendar'); }} className={`text-2xs font-semibold px-2.5 py-1 rounded-full ${googleStatus.connected ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'}`}>{googleStatus.connected ? 'מחובר' : 'לא מחובר'}</button>
         </div>
-        {googleStatus.connected ? <div className="flex gap-2"><button onClick={() => void handleGoogleCalendarSync()} disabled={syncing} className="btn-primary text-xs py-2 flex-1">{syncing ? <><Loader2 size={13} className="animate-spin" /> מסנכרן...</> : <><RefreshCw size={13} /> סנכרן אירועים שאישרתי</>}</button><button onClick={disconnectGoogle} className="btn-ghost text-xs py-2 px-3 text-destructive"><Unlink size={13} /> נתק</button></div> : <button onClick={() => router.push('/settings#google-calendar')} className="btn-secondary w-full text-sm py-2">חבר את Google Calendar</button>}
+        <label className="mb-3 flex cursor-pointer items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs text-foreground">
+          <input type="checkbox" checked={syncPlannedOnly} onChange={(event) => setSyncPlannedOnly(event.target.checked)} className="h-4 w-4 accent-primary" />
+          <span>סנכרן רק שיעורים שאישרתי הגעה אליהם</span>
+        </label>
+        {googleStatus.connected ? <div className="flex gap-2"><button onClick={() => void handleGoogleCalendarSync()} disabled={syncing} className="btn-primary text-xs py-2 flex-1">{syncing ? <><Loader2 size={13} className="animate-spin" /> מסנכרן...</> : <><RefreshCw size={13} /> סנכרן את הבחירה</>}</button><button onClick={disconnectGoogle} className="btn-ghost text-xs py-2 px-3 text-destructive"><Unlink size={13} /> נתק</button></div> : <button onClick={() => router.push('/settings#google-calendar')} className="btn-secondary w-full text-sm py-2">חבר את Google Calendar</button>}
       </div>
 
       <p className="text-2xs text-muted-foreground">היומן החיצוני שלך פרטי לחלוטין. האפליקציה לא קוראת אירועים אחרים מהיומן שלך.</p>
