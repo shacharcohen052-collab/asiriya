@@ -53,10 +53,11 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
   const handleGoogleCalendarSync = async () => {
     setSyncing(true);
     try {
+      const weeklyEvents = getWeeklyExportEvents();
       const response = await fetch('/api/google-calendar/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ events }),
+        body: JSON.stringify({ events: weeklyEvents }),
       });
       const result = await response.json() as { syncedCount?: number; error?: string };
       if (!response.ok) {
@@ -77,8 +78,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
     }
   };
 
-  const handleICSExport = async () => {
-    setExporting(true);
+  const getWeeklyExportEvents = () => {
     const today = new Date();
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7);
@@ -90,7 +90,12 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
       return eventDate >= weekStart && eventDate < weekEnd;
     });
     const plannedEvents = currentWeekEvents.filter((event) => event.myPlan && event.myPlan !== 'not_coming');
-    const exportEvents = plannedEvents.length ? plannedEvents : currentWeekEvents;
+    return plannedEvents.length ? plannedEvents : currentWeekEvents;
+  };
+
+  const handleICSExport = async () => {
+    setExporting(true);
+    const exportEvents = getWeeklyExportEvents();
     const escapeICS = (value: string) => value.replace(/\\/g, '\\\\').replace(/[,;\n]/g, (match) => match === '\n' ? '\\n' : `\\${match}`);
     const icsDate = (date: string, time: string) => `${date.replace(/-/g, '')}T${time.replace(':', '')}00`;
     const body = [
@@ -140,7 +145,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
                 <Calendar size={18} className="text-red-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">סנכרון יומן Google</p>
+                <p className="text-sm font-semibold text-foreground">ייצוא שבועי ל-Google Calendar</p>
                 {googleStatus.connected && (
                   <p className="text-xs text-muted-foreground">{googleStatus.calendarName}</p>
                 )}
@@ -185,7 +190,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
                   ) : (
                     <>
                       <RefreshCw size={13} />
-                      סנכרן שבוע נוכחי
+                      ייצוא שבוע נוכחי ל-Google
                     </>
                   )}
                 </button>
@@ -200,7 +205,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
             </>
           ) : (
             <button onClick={handleGoogleConnect} className="btn-secondary w-full text-sm py-2">
-              חיבור וסנכרון ביומן Google
+              חיבור וייצוא שבועי ל-Google
             </button>
           )}
         </div>
@@ -219,8 +224,8 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
                 <Calendar size={18} className="text-blue-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">ייבוא ליומן</p>
-            <p className="text-xs text-muted-foreground">קובץ ICS לשימוש ב-Apple Calendar או בכל יומן אחר</p>
+                <p className="text-sm font-semibold text-foreground">ייצוא שבועי ל-Apple Calendar</p>
+                <p className="text-xs text-muted-foreground">קובץ ICS לשבוע הנוכחי, לשימוש ב-Apple Calendar או בכל יומן אחר</p>
               </div>
             </div>
           </div>
@@ -248,7 +253,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
             ) : (
               <>
                 <Download size={14} />
-                ייבוא שבוע נוכחי
+                ייצוא שבוע נוכחי ל-Apple
               </>
             )}
           </button>
