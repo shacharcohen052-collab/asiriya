@@ -131,9 +131,13 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5 card-shadow-md fade-in">
-      <h2 className="text-base font-bold text-foreground mb-4">יומנים</h2>
+      <h2 className="text-base font-bold text-foreground mb-4">סנכרון וייבוא ליומנים</h2>
       <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-        בחר איך להוסיף את לוח השבוע ליומן האישי שלך: ייבוא חד־פעמי או סנכרון קבוע עם Google Calendar.
+        <span className="font-semibold text-foreground">סנכרון אוטומטי ל-Google Calendar</span>
+        <br />
+        או
+        <br />
+        <span className="font-semibold text-foreground">ייבוא חד־פעמי שבועי ליומני Google ו-Apple</span>
       </p>
 
       <div className="space-y-4">
@@ -145,7 +149,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
                 <Calendar size={18} className="text-red-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">ייצוא שבועי ל-Google Calendar</p>
+                <p className="text-sm font-semibold text-foreground">סנכרון אוטומטי ל-Google Calendar</p>
                 {googleStatus.connected && (
                   <p className="text-xs text-muted-foreground">{googleStatus.calendarName}</p>
                 )}
@@ -190,7 +194,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
                   ) : (
                     <>
                       <RefreshCw size={13} />
-                      ייצוא שבוע נוכחי ל-Google
+                      סנכרן את השבוע ל-Google Calendar
                     </>
                   )}
                 </button>
@@ -205,7 +209,7 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
             </>
           ) : (
             <button onClick={handleGoogleConnect} className="btn-secondary w-full text-sm py-2">
-              חיבור וייצוא שבועי ל-Google
+              הפעל סנכרון אוטומטי ל-Google Calendar
             </button>
           )}
         </div>
@@ -224,8 +228,8 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
                 <Calendar size={18} className="text-blue-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">ייצוא שבועי ל-Apple Calendar</p>
-                <p className="text-xs text-muted-foreground">קובץ ICS לשבוע הנוכחי, לשימוש ב-Apple Calendar או בכל יומן אחר</p>
+                <p className="text-sm font-semibold text-foreground">ייבוא חד־פעמי שבועי ליומני Google / Apple</p>
+                <p className="text-xs text-muted-foreground">בחר קישור לחיץ להורדת השבוע הנוכחי ולייבוא ידני ליומן</p>
               </div>
             </div>
           </div>
@@ -253,14 +257,19 @@ export default function CalendarSyncSection({ events = [], weekOffset = 0 }: { e
             ) : (
               <>
                 <Download size={14} />
-                ייצוא שבוע נוכחי ל-Apple
+                ייבוא שבוע נוכחי ל-Apple Calendar
               </>
             )}
           </button>
           {downloadUrl && (
-            <a href={downloadUrl} download="asiriya-schedule.ics" target="_blank" rel="noreferrer" className="mt-2 block text-center text-xs font-semibold text-primary hover:underline">
-              אם ההורדה לא התחילה: לחץ כאן לפתיחת קובץ ה־ICS
-            </a>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs font-semibold">
+              <a href={downloadUrl} download="asiriya-schedule.ics" className="rounded-lg border border-primary/20 bg-primary/5 px-2 py-2 text-primary hover:bg-primary/10">
+                קישור ייבוא ל-Google
+              </a>
+              <a href={downloadUrl} download="asiriya-schedule.ics" className="rounded-lg border border-primary/20 bg-primary/5 px-2 py-2 text-primary hover:bg-primary/10">
+                קישור ייבוא ל-Apple
+              </a>
+            </div>
           )}
         </div>
       </div>
