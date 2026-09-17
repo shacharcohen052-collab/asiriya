@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { Settings, Bell, Eye, Calendar, Moon, Check, ExternalLink } from 'lucide-react';
 
@@ -51,6 +51,7 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
 }
 
 export default function SettingsPage() {
+  const [googleMessage, setGoogleMessage] = useState<string | null>(null);
   const [notifications, setNotifications] = useState({
     pushEnabled: true,
     progressReminders: true,
@@ -71,6 +72,23 @@ export default function SettingsPage() {
   });
 
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('google');
+    const reason = params.get('reason');
+    if (!status) return;
+    const messages: Record<string, string> = {
+      connected: 'Google Calendar חובר בהצלחה. עכשיו אפשר לחזור ללוז וללחוץ על סנכרן.',
+      missing_credentials: 'חסרים GOOGLE_CLIENT_ID או GOOGLE_CLIENT_SECRET ב-Vercel. לאחר הוספה יש לבצע Redeploy.',
+      denied: `Google ביטל את ההרשאה${reason ? ` (${reason})` : ''}.`,
+      invalid_state: 'האבטחה של חיבור Google פגה. נסה להתחבר מחדש.',
+      auth_required: 'צריך להתחבר קודם ל-Asiriya ואז לחבר את Google Calendar.',
+      token_exchange_failed: 'Google לא אישר את החלפת ההרשאה. בדוק שה-Redirect URI זהה בדיוק ב-Google Cloud וב-Vercel.',
+      save_failed: 'Google אישר את החיבור, אבל שמירת החיבור ב-Supabase נכשלה.',
+    };
+    setGoogleMessage(messages[status] || `חיבור Google נכשל (${status}${reason ? `: ${reason}` : ''}).`);
+  }, []);
 
   const handleSave = () => {
     setSaved(true);
@@ -147,6 +165,11 @@ export default function SettingsPage() {
         {/* Calendar Sync */}
         <div id="google-calendar" className="scroll-mt-4">
         <Section icon={<Calendar size={16} className="text-primary" />} title="סנכרון יומן">
+          {googleMessage && (
+            <div role="status" className={`mx-0 mt-4 rounded-xl border px-3 py-3 text-xs leading-relaxed ${googleMessage.includes('בהצלחה') ? 'border-green-200 bg-green-50 text-green-800' : 'border-red-200 bg-red-50 text-red-800'}`}>
+              {googleMessage}
+            </div>
+          )}
           <div className="py-3">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
