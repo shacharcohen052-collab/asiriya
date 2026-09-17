@@ -85,9 +85,18 @@ export default function ClassScheduleAttendancePage() {
       .order('start_time');
 
     if (error) toast.error('לא ניתן לטעון את הלו״ז כרגע');
-    else setEvents((data ?? []).map(mapRow));
+    else {
+      const mapped = (data ?? []).map(mapRow);
+      const eventIds = mapped.map((event) => event.id);
+      const { data: plans, error: plansError } = profile?.id && eventIds.length
+        ? await supabase.from('attendance_plans').select('event_id,plan').eq('user_id', profile.id).in('event_id', eventIds)
+        : { data: [], error: null };
+      if (plansError) console.warn('Could not load attendance plans', plansError.message);
+      const planByEvent = new Map((plans ?? []).map((plan) => [plan.event_id, plan.plan]));
+      setEvents(mapped.map((event) => ({ ...event, myPlan: planByEvent.get(event.id) ?? null })));
+    }
     setLoading(false);
-  }, [isApproved, weekOffset]);
+  }, [isApproved, profile?.id, weekOffset]);
 
   useEffect(() => {
     void loadSchedule();
@@ -143,8 +152,17 @@ export default function ClassScheduleAttendancePage() {
     await loadSchedule();
   };
 
-  const updatePlan = (id: string, plan: string | null) => {
+  const updatePlan = async (id: string, plan: string | null) => {
     setEvents((previous) => previous.map((event) => (event.id === id ? { ...event, myPlan: plan } : event)));
+    if (!profile?.id) return;
+    const result = plan
+      ? await supabase.from('attendance_plans').upsert({ user_id: profile.id, event_id: id, plan, updated_at: new Date().toISOString() }, { onConflict: 'user_id,event_id' })
+      : await supabase.from('attendance_plans').delete().eq('user_id', profile.id).eq('event_id', id);
+    if (result.error) {
+      toast.error('שמירת תכנון ההגעה נכשלה');
+      await loadSchedule();
+      return;
+    }
     toast.success(plan ? 'תכנון ההגעה עודכן' : 'תכנון ההגעה בוטל');
   };
 
