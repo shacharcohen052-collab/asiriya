@@ -3,7 +3,7 @@ import React from 'react';
 import { useParams } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import { MEMBERS, getInitials, getAvatarColor } from '@/data/members';
-import { ArrowRight, Briefcase, Heart, Sparkles, Clock, Zap, Target } from 'lucide-react';
+import { ArrowRight, Briefcase, Clock, Sparkles, Target, Zap } from 'lucide-react';
 import Link from 'next/link';
 
 interface QARowProps {
@@ -65,12 +65,6 @@ export default function MemberProfilePage() {
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{member.lifeWork}</p>
             )}
             <div className="flex flex-wrap gap-2 mt-3">
-              {member.relationshipStatus && (
-                <span className="inline-flex items-center gap-1.5 text-xs bg-rose-50 text-rose-600 rounded-full px-3 py-1 font-medium">
-                  <Heart size={11} />
-                  {member.relationshipStatus}
-                </span>
-              )}
               <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary rounded-full px-3 py-1 font-medium">
                 #{member.profileId}
               </span>

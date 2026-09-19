@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { MEMBERS, getInitials, getAvatarColor, Member } from '@/data/members';
-import { Search, Heart, Users } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import Link from 'next/link';
 
 function MemberCard({ member, index }: { member: Member; index: number }) {
@@ -11,7 +11,7 @@ function MemberCard({ member, index }: { member: Member; index: number }) {
 
   return (
     <Link href={`/members/${member.profileId}`} className="block group">
-      <div className="bg-card border border-border rounded-xl p-5 card-shadow hover:card-shadow-md transition-all duration-200 hover:-translate-y-0.5 h-full flex flex-col">
+      <div className="bg-card border border-border rounded-2xl p-4 card-shadow hover:card-shadow-md transition-all duration-200 hover:-translate-y-0.5 h-full flex flex-col">
         {/* Avatar + Name */}
         <div className="flex items-center gap-3 mb-4">
           <div className={`w-12 h-12 rounded-full ${avatarColor} flex items-center justify-center text-white text-base font-bold flex-shrink-0`}>
@@ -23,16 +23,6 @@ function MemberCard({ member, index }: { member: Member; index: number }) {
               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{member.lifeWork}</p>
             )}
           </div>
-        </div>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {member.relationshipStatus && (
-            <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground rounded-full px-2.5 py-0.5">
-              <Heart size={10} />
-              {member.relationshipStatus}
-            </span>
-          )}
         </div>
 
         {/* Connection strength */}
@@ -71,13 +61,13 @@ export default function MembersPage() {
 
       {/* Search */}
       <div className="relative mb-6 max-w-md">
-        <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Search size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           placeholder="חפש חבר..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="input-field pr-9"
+          className="input-field !pr-12 !pl-4"
         />
       </div>
 
@@ -88,7 +78,7 @@ export default function MembersPage() {
           <p>לא נמצאו חברים</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((member, i) => (
             <MemberCard key={member.profileId} member={member} index={i} />
           ))}
