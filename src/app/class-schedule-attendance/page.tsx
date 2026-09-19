@@ -194,7 +194,7 @@ export default function ClassScheduleAttendancePage() {
               onAttendanceReport={updateAttendance}
             />
           ) : (
-            <WeekScheduleView weekOffset={weekOffset} addedEvents={events} showDemoEvents={false} onDeleteEvent={deleteEvent} />
+            <WeekScheduleView weekOffset={weekOffset} addedEvents={events} showDemoEvents={false} onDeleteEvent={deleteEvent} onPlanChange={updatePlan} />
           )}
         <CalendarSyncSection events={events} weekOffset={weekOffset} />
       </div>

@@ -400,7 +400,7 @@ function groupByDay(events: typeof WEEK_EVENTS) {
   return groups;
 }
 
-export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], showDemoEvents = true, onDeleteEvent }: { weekOffset?: number; addedEvents?: ScheduleEvent[]; showDemoEvents?: boolean; onDeleteEvent?: (id: string) => void }) {
+export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], showDemoEvents = true, onDeleteEvent, onPlanChange }: { weekOffset?: number; addedEvents?: ScheduleEvent[]; showDemoEvents?: boolean; onDeleteEvent?: (id: string) => void; onPlanChange?: (id: string, plan: string | null) => void }) {
   const [events, setEvents] = useState(() => [...(showDemoEvents ? getRelativeWeekEvents(weekOffset) : []), ...addedEvents]);
   const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({});
 
@@ -412,6 +412,7 @@ export default function WeekScheduleView({ weekOffset = 0, addedEvents = [], sho
 
   const handlePlanChange = (id: string, plan: string | null) => {
     setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, myPlan: plan } : e)));
+    onPlanChange?.(id, plan);
   };
 
   const handleAttendanceReport = (id: string, status: string) => {
