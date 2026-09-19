@@ -1,8 +1,13 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { MEMBERS, getInitials, getAvatarColor } from '@/data/members';
-import { RotateCcw, ChevronRight, ChevronLeft, Calendar, AlertCircle, Edit3, X, Check } from 'lucide-react';
+import { RotateCcw, ChevronRight, ChevronLeft, Calendar, AlertCircle, Edit3, X, Check, Bell, BellOff } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
+
+const supabase = createClient();
 
 interface DutyPair {
   day: number;
@@ -47,11 +52,15 @@ function generateMonthlyRoster(year: number, month: number): DutyPair[] {
     const hb = ((b[0] * 31 + b[1]) * seed) % 997;
     return ha - hb;
   });
+  let previousPair: [number, number] | null = null;
   for (let d = 1; d <= days; d++) {
     const date = new Date(year, month, d);
     const weekday = WEEKDAYS_HE[date.getDay()];
-    const pairIndex = (d - 1) % shuffled.length;
-    const [iA, iB] = shuffled[pairIndex];
+    const candidates = shuffled.filter(([iA, iB]) => !previousPair || !previousPair.includes(iA) && !previousPair.includes(iB));
+    const source = candidates.length ? candidates : shuffled;
+    const pair = source[(d - 1) % source.length];
+    const [iA, iB] = pair;
+    previousPair = pair;
     pairs.push({
       day: d,
       date: `${d}/${month + 1}/${year}`,
@@ -145,6 +154,44 @@ export default function ConnectionDutiesPage() {
   const [month, setMonth] = useState(now.getMonth());
   const [overrides, setOverrides] = useState<Record<number, Override>>({});
   const [editingDay, setEditingDay] = useState<number | null>(null);
+  const { profile } = useAuth();
+  const [remindersEnabled, setRemindersEnabled] = useState(false);
+
+  useEffect(() => {
+    setRemindersEnabled(window.localStorage.getItem('asiriya.connection-duty.reminders') === 'true');
+  }, []);
+
+  const toggleDutyReminder = async () => {
+    const next = !remindersEnabled;
+    if (next && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast.error('כדי לקבל התראה יש לאפשר התראות בדפדפן');
+        return;
+      }
+    }
+    setRemindersEnabled(next);
+    window.localStorage.setItem('asiriya.connection-duty.reminders', String(next));
+    if (profile?.id) {
+      const { error } = await supabase.from('user_profiles').update({ push_reminders_enabled: next }).eq('id', profile.id);
+      if (error) toast.error('שמירת העדפת ההתראה נכשלה');
+    }
+    toast.success(next ? 'התראה יום לפני התורנות הופעלה' : 'התראת התורנות בוטלה');
+  };
+
+  useEffect(() => {
+    if (!remindersEnabled || typeof Notification === 'undefined' || Notification.permission !== 'granted' || !profile?.id) return;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowRoster = generateMonthlyRoster(tomorrow.getFullYear(), tomorrow.getMonth())[tomorrow.getDate() - 1];
+    if (!tomorrowRoster) return;
+    const isMine = tomorrowRoster.memberA.email.toLowerCase() === profile.email.toLowerCase() || tomorrowRoster.memberB.email.toLowerCase() === profile.email.toLowerCase();
+    const key = `asiriya.connection-duty.notified.${tomorrow.toISOString().slice(0, 10)}`;
+    if (isMine && window.localStorage.getItem(key) !== 'true') {
+      new Notification('מחר תורנות החיבור שלך', { body: `${tomorrowRoster.memberA.displayName} ו־${tomorrowRoster.memberB.displayName}` });
+      window.localStorage.setItem(key, 'true');
+    }
+  }, [profile?.id, remindersEnabled]);
 
   const roster = useMemo(() => generateMonthlyRoster(year, month), [year, month]);
   const todayDay = now.getFullYear() === year && now.getMonth() === month ? now.getDate() : -1;
@@ -204,6 +251,21 @@ export default function ConnectionDutiesPage() {
             <>תורני היום: <span className="font-semibold text-foreground">{roster[todayDay - 1]?.memberA?.displayName}</span> + <span className="font-semibold text-foreground">{roster[todayDay - 1]?.memberB?.displayName}</span></>
           ) : 'בחר חודש נוכחי לראות תורני היום'}
         </p>
+      </div>
+
+      <div className="bg-card border border-border rounded-xl p-4 card-shadow mb-5 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${remindersEnabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+            {remindersEnabled ? <Bell size={18} /> : <BellOff size={18} />}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">התראה יום לפני תורנות החיבור</p>
+            <p className="text-xs text-muted-foreground">קבל התראה בדפדפן כשמחר תורך</p>
+          </div>
+        </div>
+        <button type="button" role="switch" aria-checked={remindersEnabled} onClick={() => void toggleDutyReminder()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${remindersEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
+          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${remindersEnabled ? 'translate-x-1' : 'translate-x-6'}`} />
+        </button>
       </div>
 
       {/* Roster table */}
