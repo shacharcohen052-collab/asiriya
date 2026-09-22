@@ -9,6 +9,13 @@ import { toast } from 'sonner';
 
 const supabase = createClient();
 
+function urlBase64ToArrayBuffer(value: string): ArrayBuffer {
+  const padding = '='.repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = window.atob(base64);
+  return Uint8Array.from([...raw].map((char) => char.charCodeAt(0))).buffer;
+}
+
 interface DutyPair {
   day: number;
   date: string;
@@ -156,27 +163,91 @@ export default function ConnectionDutiesPage() {
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const { profile } = useAuth();
   const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [reminderBusy, setReminderBusy] = useState(false);
 
   useEffect(() => {
-    setRemindersEnabled(window.localStorage.getItem('asiriya.connection-duty.reminders') === 'true');
-  }, []);
+    let cancelled = false;
+    const loadPushState = async () => {
+      if (!profile?.id || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        const subscription = await registration.pushManager.getSubscription();
+        if (!subscription || cancelled) return;
+        const { data } = await supabase
+          .from('push_subscriptions')
+          .select('id')
+          .eq('user_id', profile.id)
+          .eq('endpoint', subscription.endpoint)
+          .limit(1);
+        if (!cancelled) setRemindersEnabled(Boolean(data?.length));
+      } catch {
+        // Permission and browser support errors are surfaced when the user enables the toggle.
+      }
+    };
+    void loadPushState();
+    return () => { cancelled = true; };
+  }, [profile?.id]);
 
   const toggleDutyReminder = async () => {
     const next = !remindersEnabled;
-    if (next && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        toast.error('כדי לקבל התראה יש לאפשר התראות בדפדפן');
+    if (!profile?.id) return toast.error('יש להתחבר כדי להפעיל התראות');
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined') {
+      return toast.error('הדפדפן הזה אינו תומך בהתראות Push');
+    }
+
+    setReminderBusy(true);
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      if (!next) {
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await supabase.from('push_subscriptions').delete().eq('user_id', profile.id).eq('endpoint', subscription.endpoint);
+          await subscription.unsubscribe();
+        }
+        await supabase.from('user_profiles').update({ push_reminders_enabled: false }).eq('id', profile.id);
+        setRemindersEnabled(false);
+        toast.success('התראת התורנות בוטלה');
         return;
       }
+
+      const permission = Notification.permission === 'granted'
+        ? 'granted'
+        : await Notification.requestPermission();
+      if (permission !== 'granted') return toast.error('כדי לקבל התראה יש לאפשר התראות בדפדפן');
+
+      const configResponse = await fetch('/api/push/config', { cache: 'no-store' });
+      const config = await configResponse.json() as { publicKey?: string; error?: string };
+      if (!configResponse.ok || !config.publicKey) {
+        return toast.error('חיבור ההתראות עדיין לא הוגדר במערכת. יש להוסיף VAPID public key ב-Vercel.');
+      }
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToArrayBuffer(config.publicKey),
+      });
+      const json = subscription.toJSON();
+      if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) {
+        return toast.error('הדפדפן לא החזיר פרטי מנוי תקינים');
+      }
+
+      const { error } = await supabase.from('push_subscriptions').upsert({
+        user_id: profile.id,
+        endpoint: json.endpoint,
+        p256dh: json.keys.p256dh,
+        auth: json.keys.auth,
+        user_agent: navigator.userAgent,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,endpoint' });
+      if (error) throw error;
+      await supabase.from('user_profiles').update({ push_reminders_enabled: true }).eq('id', profile.id);
+      setRemindersEnabled(true);
+      toast.success('התראה יום לפני התורנות הופעלה');
+    } catch (error) {
+      console.error('Push subscription error', error);
+      toast.error('שמירת מנוי ההתראות נכשלה. נסה שוב.');
+    } finally {
+      setReminderBusy(false);
     }
-    setRemindersEnabled(next);
-    window.localStorage.setItem('asiriya.connection-duty.reminders', String(next));
-    if (profile?.id) {
-      const { error } = await supabase.from('user_profiles').update({ push_reminders_enabled: next }).eq('id', profile.id);
-      if (error) toast.error('שמירת העדפת ההתראה נכשלה');
-    }
-    toast.success(next ? 'התראה יום לפני התורנות הופעלה' : 'התראת התורנות בוטלה');
   };
 
   useEffect(() => {
@@ -188,7 +259,7 @@ export default function ConnectionDutiesPage() {
     const isMine = tomorrowRoster.memberA.email.toLowerCase() === profile.email.toLowerCase() || tomorrowRoster.memberB.email.toLowerCase() === profile.email.toLowerCase();
     const key = `asiriya.connection-duty.notified.${tomorrow.toISOString().slice(0, 10)}`;
     if (isMine && window.localStorage.getItem(key) !== 'true') {
-      new Notification('מחר תורנות החיבור שלך', { body: `${tomorrowRoster.memberA.displayName} ו־${tomorrowRoster.memberB.displayName}` });
+      void navigator.serviceWorker.ready.then((registration) => registration.showNotification('מחר תורנות החיבור שלך', { body: `${tomorrowRoster.memberA.displayName} ו־${tomorrowRoster.memberB.displayName}`, dir: 'rtl', lang: 'he', data: { url: '/connection-duties' } }));
       window.localStorage.setItem(key, 'true');
     }
   }, [profile?.id, remindersEnabled]);
@@ -263,7 +334,7 @@ export default function ConnectionDutiesPage() {
             <p className="text-xs text-muted-foreground">קבל התראה בדפדפן כשמחר תורך</p>
           </div>
         </div>
-        <button type="button" role="switch" aria-checked={remindersEnabled} onClick={() => void toggleDutyReminder()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${remindersEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
+        <button type="button" role="switch" aria-checked={remindersEnabled} disabled={reminderBusy} onClick={() => void toggleDutyReminder()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${remindersEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
           <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${remindersEnabled ? 'translate-x-1' : 'translate-x-6'}`} />
         </button>
       </div>
