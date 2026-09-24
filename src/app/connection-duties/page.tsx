@@ -168,9 +168,10 @@ export default function ConnectionDutiesPage() {
   useEffect(() => {
     let cancelled = false;
     const loadPushState = async () => {
-      if (!profile?.id || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      if (!profile?.id || !('serviceWorker' in navigator)) return;
       try {
         const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        if (!('pushManager' in registration)) return;
         const subscription = await registration.pushManager.getSubscription();
         if (!subscription || cancelled) return;
         const { data } = await supabase
@@ -191,13 +192,19 @@ export default function ConnectionDutiesPage() {
   const toggleDutyReminder = async () => {
     const next = !remindersEnabled;
     if (!profile?.id) return toast.error('יש להתחבר כדי להפעיל התראות');
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined') {
-      return toast.error('הדפדפן הזה אינו תומך בהתראות Push');
+    if (!window.isSecureContext) {
+      return toast.error('התראות דורשות אתר מאובטח ב־HTTPS');
+    }
+    if (!('serviceWorker' in navigator) || typeof Notification === 'undefined') {
+      return toast.error('הדפדפן הזה אינו תומך בהתראות מערכת');
     }
 
     setReminderBusy(true);
     try {
       const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      if (!('pushManager' in registration)) {
+        return toast.error('הדפדפן הזה אינו תומך ב־Web Push. ב־iPhone יש להתקין את האתר במסך הבית ולפתוח אותו משם.');
+      }
       if (!next) {
         const subscription = await registration.pushManager.getSubscription();
         if (subscription) {
@@ -244,7 +251,10 @@ export default function ConnectionDutiesPage() {
       toast.success('התראה יום לפני התורנות הופעלה');
     } catch (error) {
       console.error('Push subscription error', error);
-      toast.error('שמירת מנוי ההתראות נכשלה. נסה שוב.');
+      const message = error instanceof DOMException && error.name === 'NotAllowedError'
+        ? 'ההרשאה להתראות נחסמה. יש לאפשר התראות בהגדרות הדפדפן עבור האתר.'
+        : 'שמירת מנוי ההתראות נכשלה. ודא שהאתר פועל ב־HTTPS ושמפתח VAPID הוגדר ב־Vercel.';
+      toast.error(message);
     } finally {
       setReminderBusy(false);
     }
