@@ -30,30 +30,44 @@ async function sendPush(userId: string, payload: { title: string; body: string; 
   const publicKey = process.env.VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT;
-  if (!publicKey || !privateKey || !subject || !process.env.SUPABASE_SERVICE_ROLE_KEY) return;
+  if (!publicKey || !privateKey || !subject || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('Duty swap push skipped: missing server configuration');
+    return { sent: 0, reason: 'missing_server_configuration' };
+  }
 
   const admin = adminClient();
   webpush.setVapidDetails(subject, publicKey, privateKey);
-  const { data: subscriptions } = await admin
+  const { data: subscriptions, error: subscriptionError } = await admin
     .from('push_subscriptions')
     .select('id, endpoint, p256dh, auth')
     .eq('user_id', userId);
 
-  for (const subscription of subscriptions || []) {
+  if (subscriptionError) {
+    console.error('Duty swap push subscription lookup failed', subscriptionError);
+    return { sent: 0, reason: 'subscription_lookup_failed' };
+  }
+  if (!subscriptions?.length) {
+    console.warn('Duty swap push skipped: recipient has no active subscription', { userId });
+    return { sent: 0, reason: 'recipient_has_no_subscription' };
+  }
+  let sent = 0;
+  for (const subscription of subscriptions) {
     try {
       await webpush.sendNotification(
         { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
         JSON.stringify(payload),
       );
+      sent += 1;
     } catch (error) {
       const statusCode = (error as { statusCode?: number }).statusCode;
       if (statusCode === 404 || statusCode === 410) {
         await admin.from('push_subscriptions').delete().eq('id', subscription.id);
       } else {
-        console.error('Duty swap push failed', { userId, statusCode });
+        console.error('Duty swap push failed', { userId, statusCode, error: String(error) });
       }
     }
   }
+  return { sent, reason: sent ? 'sent' : 'delivery_failed' };
 }
 
 async function getCurrentProfileId(supabase: Awaited<ReturnType<typeof createClient>>) {
@@ -125,13 +139,13 @@ export async function POST(request: Request) {
       .select('id,display_name')
       .in('id', [currentProfileId, body.requestedTo]);
     const byId = new Map((profiles || []).map((profile) => [profile.id, profile.display_name]));
-    await sendPush(body.requestedTo, {
+    const push = await sendPush(body.requestedTo, {
       title: 'בקשת החלפה חדשה',
       body: `${byId.get(currentProfileId) || 'חבר'} מבקש להחליף איתך את תורנות החיבור בתאריך ${body.dutyDate}`,
       url: '/connection-duties',
       tag: `duty-swap-${data.id}`,
     });
-    return NextResponse.json({ request: data }, { status: 201 });
+    return NextResponse.json({ request: data, push }, { status: 201 });
   }
 
   if (body.action === 'respond' && body.requestId && body.status) {
@@ -151,13 +165,13 @@ export async function POST(request: Request) {
       .select('display_name')
       .eq('id', currentProfileId)
       .maybeSingle();
-    await sendPush(data.requested_by, {
+    const push = await sendPush(data.requested_by, {
       title: body.status === 'accepted' ? 'בקשת ההחלפה אושרה' : 'בקשת ההחלפה נדחתה',
       body: `${recipient?.display_name || 'החבר'} ${body.status === 'accepted' ? 'אישר/ה' : 'דחה/תה'} את ההחלפה לתאריך ${data.duty_date}`,
       url: '/connection-duties',
       tag: `duty-swap-response-${data.id}`,
     });
-    return NextResponse.json({ request: data });
+    return NextResponse.json({ request: data, push });
   }
 
   return NextResponse.json({ error: 'invalid_action' }, { status: 400 });

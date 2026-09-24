@@ -132,6 +132,27 @@ export default function ConnectionDutiesPage() {
   useEffect(() => { void loadSwapRequests(); }, [monthStart, monthEnd, profile?.id]);
 
   useEffect(() => {
+    if (!profile?.id) return undefined;
+    const refresh = () => { void loadSwapRequests(); };
+    const interval = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => { window.clearInterval(interval); window.removeEventListener('focus', refresh); };
+  }, [monthStart, monthEnd, profile?.id]);
+
+  useEffect(() => {
+    const incoming = swapRequests.find((request) => request.requested_to === profile?.id && request.status === 'pending');
+    if (!incoming || typeof window === 'undefined') return;
+    const notificationKey = `asiriya.swap-notified.${incoming.id}`;
+    if (window.localStorage.getItem(notificationKey) === 'true') return;
+    const requesterName = incoming.requester?.display_name || 'חבר';
+    toast.info(`${requesterName} מבקש להחליף איתך תורנות`, { description: 'פתח את השורה המתאימה כדי לאשר או לסרב.' });
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+      void navigator.serviceWorker.ready.then((registration) => registration.showNotification('בקשת החלפה חדשה', { body: `${requesterName} מבקש להחליף איתך את תורנות החיבור`, dir: 'rtl', lang: 'he', tag: `duty-swap-${incoming.id}`, data: { url: '/connection-duties' } }));
+    }
+    window.localStorage.setItem(notificationKey, 'true');
+  }, [swapRequests, profile?.id]);
+
+  useEffect(() => {
     let cancelled = false;
     const loadPushState = async () => {
       if (!profile?.id || !('serviceWorker' in navigator)) return;
@@ -156,7 +177,7 @@ export default function ConnectionDutiesPage() {
     setReminderBusy(true);
     try {
       const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-      if (!('pushManager' in registration)) return toast.error('ב־iPhone יש לפתוח את האתר מהאייקון במסך הבית כדי להפעיל Web Push.');
+      if (!('pushManager' in registration)) return toast.error('הדפדפן הזה אינו תומך בהתראות Push. נסה לפתוח את האתר בדפדפן נתמך.');
       if (!next) {
         const subscription = await registration.pushManager.getSubscription();
         if (subscription) {
@@ -169,7 +190,7 @@ export default function ConnectionDutiesPage() {
         return;
       }
       const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-      if (permission !== 'granted') return toast.error('כדי לקבל התראה יש לאפשר התראות ב־הגדרות האייפון');
+      if (permission !== 'granted') return toast.error('כדי לקבל התראות יש לאפשר הרשאות התראה בהגדרות המכשיר או הדפדפן');
       const configResponse = await fetch('/api/push/config', { cache: 'no-store' });
       const config = await configResponse.json() as { publicKey?: string };
       if (!configResponse.ok || !config.publicKey) return toast.error('חיבור ההתראות עדיין לא הוגדר במערכת.');
@@ -180,10 +201,10 @@ export default function ConnectionDutiesPage() {
       if (error) throw error;
       await supabase.from('user_profiles').update({ push_reminders_enabled: true }).eq('id', profile.id);
       setRemindersEnabled(true);
-      toast.success('התראות החיבור הופעלו באייפון');
+      toast.success('התראות החיבור הופעלו במכשיר');
     } catch (error) {
       console.error('Push subscription error', error);
-      toast.error(error instanceof DOMException && error.name === 'NotAllowedError' ? 'ההרשאה להתראות נחסמה בהגדרות האייפון.' : 'שמירת מנוי ההתראות נכשלה.');
+      toast.error(error instanceof DOMException && error.name === 'NotAllowedError' ? 'הרשאת ההתראות נחסמה בהגדרות המכשיר או הדפדפן.' : 'שמירת מנוי ההתראות נכשלה.');
     } finally { setReminderBusy(false); }
   };
 
@@ -201,13 +222,14 @@ export default function ConnectionDutiesPage() {
   const createSwapRequest = async (row: DutyPair, targetId: string) => {
     setSwapBusy(row.day);
     const response = await fetch('/api/connection-duty-swaps', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', dutyDate: dateKey(year, month, row.day), requestedTo: targetId }) });
-    const data = await response.json() as { error?: string };
+    const data = await response.json() as { error?: string; push?: { reason?: string } };
     setSwapBusy(null);
     if (!response.ok) return toast.error(data.error === 'pending_request_exists' ? 'כבר קיימת בקשת החלפה שממתינה לאישור.' : 'לא ניתן ליצור את בקשת ההחלפה.');
     setEditingDay(null);
     setSelectedTarget((previous) => ({ ...previous, [row.day]: '' }));
     await loadSwapRequests();
-    toast.success('בקשת ההחלפה נשלחה לחבר');
+    if (data.push?.reason === 'recipient_has_no_subscription') toast.warning('הבקשה נשלחה, אבל לחבר אין כרגע מנוי התראות פעיל באייפון.');
+    else toast.success('בקשת ההחלפה נשלחה לחבר');
   };
 
   const respondToSwap = async (request: SwapRequest, status: 'accepted' | 'rejected') => {
@@ -243,7 +265,7 @@ export default function ConnectionDutiesPage() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-4 card-shadow mb-5 flex items-center justify-between gap-4"><div className="flex items-center gap-3"><div className={`w-9 h-9 rounded-xl flex items-center justify-center ${remindersEnabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{remindersEnabled ? <Bell size={18} /> : <BellOff size={18} />}</div><div><p className="text-sm font-semibold text-foreground">התראות תורנות באייפון</p><p className="text-xs text-muted-foreground">קבל הודעה כשמחר תורך או כשמישהו מבקש החלפה</p></div></div><button type="button" role="switch" aria-checked={remindersEnabled} disabled={reminderBusy} onClick={() => void toggleDutyReminder()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${remindersEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${remindersEnabled ? 'translate-x-1' : 'translate-x-6'}`} /></button></div>
+      <div className="bg-card border border-border rounded-xl p-4 card-shadow mb-5 flex items-center justify-between gap-4"><div className="flex items-center gap-3"><div className={`w-9 h-9 rounded-xl flex items-center justify-center ${remindersEnabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{remindersEnabled ? <Bell size={18} /> : <BellOff size={18} />}</div><div><p className="text-sm font-semibold text-foreground">התראות תורנות</p><p className="text-xs text-muted-foreground">קבל הודעה כשמחר תורך או כשמישהו מבקש החלפה</p></div></div><button type="button" role="switch" aria-checked={remindersEnabled} disabled={reminderBusy} onClick={() => void toggleDutyReminder()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${remindersEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${remindersEnabled ? 'translate-x-1' : 'translate-x-6'}`} /></button></div>
 
       <div className="bg-card border border-border rounded-xl card-shadow overflow-hidden"><div className="grid grid-cols-[auto_1fr_1fr_auto] text-xs font-semibold text-muted-foreground bg-muted/50 px-4 py-3 border-b border-border"><div className="w-20">תאריך</div><div className="px-4">חבר א׳</div><div className="px-4">חבר ב׳</div><div className="w-8" /></div>
         <div className="divide-y divide-border">{roster.map((row) => {
