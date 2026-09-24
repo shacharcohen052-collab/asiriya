@@ -28,6 +28,7 @@ interface DutyPair {
 
 type SwapStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
 type MemberProfile = { id: string; email: string; profile_id: number | null; display_name: string };
+type DutyApiRow = { duty_date: string; member1: MemberProfile | null; member2: MemberProfile | null; is_manual_override: boolean };
 type SwapRequest = {
   id: string;
   duty_date: string;
@@ -93,9 +94,18 @@ export default function ConnectionDutiesPage() {
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>([]);
   const [swapBusy, setSwapBusy] = useState<string | number | null>(null);
   const [memberProfiles, setMemberProfiles] = useState<MemberProfile[]>([]);
+  const [savedDuties, setSavedDuties] = useState<DutyApiRow[]>([]);
   const { profile } = useAuth();
 
-  const roster = useMemo(() => generateMonthlyRoster(year, month), [year, month]);
+  const roster = useMemo(() => {
+    if (!savedDuties.length) return generateMonthlyRoster(year, month);
+    return savedDuties.map((duty, index) => {
+      const date = new Date(`${duty.duty_date}T12:00:00`);
+      const memberA = duty.member1 ? { ...MEMBERS.find((member) => member.email.toLowerCase() === duty.member1!.email.toLowerCase()), ...duty.member1, profileId: duty.member1.profile_id ?? 0, displayName: duty.member1.display_name } as typeof MEMBERS[0] : MEMBERS[0];
+      const memberB = duty.member2 ? { ...MEMBERS.find((member) => member.email.toLowerCase() === duty.member2!.email.toLowerCase()), ...duty.member2, profileId: duty.member2.profile_id ?? 0, displayName: duty.member2.display_name } as typeof MEMBERS[0] : MEMBERS[1];
+      return { day: date.getDate(), date: `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`, weekday: WEEKDAYS_HE[date.getDay()], memberA, memberB, indexA: index % 12, indexB: (index + 1) % 12 };
+    });
+  }, [savedDuties, year, month]);
   const todayDay = now.getFullYear() === year && now.getMonth() === month ? now.getDate() : -1;
   const monthStart = dateKey(year, month, 1);
   const monthEnd = dateKey(year, month, getDaysInMonth(year, month));
@@ -111,6 +121,13 @@ export default function ConnectionDutiesPage() {
   useEffect(() => {
     void supabase.from('user_profiles').select('id,email,profile_id,display_name').then(({ data }) => setMemberProfiles((data || []) as MemberProfile[]));
   }, []);
+
+  useEffect(() => {
+    void fetch(`/api/connection-duties?start=${monthStart}&end=${monthEnd}`, { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() as Promise<{ duties?: DutyApiRow[] }> : { duties: [] })
+      .then((data) => setSavedDuties(data.duties || []))
+      .catch(() => setSavedDuties([]));
+  }, [monthStart, monthEnd]);
 
   useEffect(() => { void loadSwapRequests(); }, [monthStart, monthEnd, profile?.id]);
 
@@ -238,7 +255,7 @@ export default function ConnectionDutiesPage() {
           const pendingOutgoing = swapRequests.find((request) => request.duty_date === rowDate && request.requested_by === profile?.id && request.status === 'pending');
           const pendingIncoming = swapRequests.find((request) => request.duty_date === rowDate && request.requested_to === profile?.id && request.status === 'pending');
           const isEditing = editingDay === row.day;
-          const candidates = MEMBERS.map((member) => ({ member, profile: profileByEmail.get(member.email.toLowerCase()) })).filter(({ member, profile: candidateProfile }) => candidateProfile && member.email.toLowerCase() !== pair.memberA.email.toLowerCase() && member.email.toLowerCase() !== pair.memberB.email.toLowerCase() && candidateProfile.id !== profile?.id);
+          const candidates = memberProfiles.filter((candidateProfile) => candidateProfile.email.toLowerCase() !== pair.memberA.email.toLowerCase() && candidateProfile.email.toLowerCase() !== pair.memberB.email.toLowerCase() && candidateProfile.id !== profile?.id);
           return <div key={row.day} className={isToday ? 'bg-primary/[0.04]' : ''}>
             <div className={`grid grid-cols-[auto_1fr_1fr_auto] items-center px-4 py-3 transition-colors ${isToday ? 'border-r-4 border-primary bg-primary/10' : 'hover:bg-muted/30'}`}>
               <div className="w-20"><p className={`text-sm font-bold ${isToday ? 'text-primary' : 'text-foreground'}`}>{row.day}/{month + 1}</p><p className="text-2xs text-muted-foreground">{row.weekday}</p>{isToday && <span className="inline-flex mt-1 text-[10px] font-bold text-primary bg-primary/15 rounded-full px-2 py-0.5">היום</span>}</div>
@@ -248,7 +265,7 @@ export default function ConnectionDutiesPage() {
             {(pendingOutgoing || pendingIncoming || isEditing) && <div className="px-4 pb-3 space-y-2">
               {pendingOutgoing && <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800"><Clock3 size={14} /><span>ממתין לאישור של {pendingOutgoing.recipient?.display_name || 'החבר שנבחר'}</span></div>}
               {pendingIncoming && <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 space-y-2"><div className="flex items-center gap-2 text-sm font-semibold"><UserRound size={15} className="text-primary" />{pendingIncoming.requester?.display_name || 'חבר'} מבקש להחליף איתך את תורנות {rowDate}</div><div className="flex gap-2"><button disabled={swapBusy === pendingIncoming.id} onClick={() => void respondToSwap(pendingIncoming, 'accepted')} className="btn-primary text-xs py-1.5 px-3"><Check size={13} /> אישור</button><button disabled={swapBusy === pendingIncoming.id} onClick={() => void respondToSwap(pendingIncoming, 'rejected')} className="btn-ghost text-xs py-1.5 px-3"><X size={13} /> סירוב</button></div></div>}
-              {isEditing && currentProfileIsDuty && !pendingOutgoing && <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 space-y-3"><div><p className="text-sm font-bold text-foreground">החלפה עם חבר</p><p className="text-xs text-muted-foreground mt-0.5">בחר חבר אחר. הוא יקבל התראה ויחליט אם לאשר.</p></div><select className="input-field text-sm" value={selectedTarget[row.day] || ''} onChange={(event) => setSelectedTarget((previous) => ({ ...previous, [row.day]: event.target.value }))}><option value="">בחר חבר להחלפה</option>{candidates.map(({ member, profile: candidateProfile }) => <option key={candidateProfile!.id} value={candidateProfile!.id}>{member.displayName}</option>)}</select><div className="flex gap-2"><button disabled={!selectedTarget[row.day] || swapBusy === row.day} onClick={() => void createSwapRequest(row, selectedTarget[row.day])} className="btn-primary text-xs py-1.5 px-3">שלח בקשה</button><button onClick={() => setEditingDay(null)} className="btn-ghost text-xs py-1.5 px-3">ביטול</button></div></div>}
+              {isEditing && currentProfileIsDuty && !pendingOutgoing && <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 space-y-3"><div><p className="text-sm font-bold text-foreground">החלפה עם חבר</p><p className="text-xs text-muted-foreground mt-0.5">בחר חבר אחר. הוא יקבל התראה ויחליט אם לאשר.</p></div><select className="input-field text-sm" value={selectedTarget[row.day] || ''} onChange={(event) => setSelectedTarget((previous) => ({ ...previous, [row.day]: event.target.value }))}><option value="">בחר חבר להחלפה</option>{candidates.map((candidateProfile) => <option key={candidateProfile.id} value={candidateProfile.id}>{candidateProfile.display_name}</option>)}</select><div className="flex gap-2"><button disabled={!selectedTarget[row.day] || swapBusy === row.day} onClick={() => void createSwapRequest(row, selectedTarget[row.day])} className="btn-primary text-xs py-1.5 px-3">שלח בקשה</button><button onClick={() => setEditingDay(null)} className="btn-ghost text-xs py-1.5 px-3">ביטול</button></div></div>}
             </div>}
           </div>;
         })}</div>
