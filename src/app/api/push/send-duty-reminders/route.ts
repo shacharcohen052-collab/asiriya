@@ -88,6 +88,25 @@ async function sendDutyReminders(request: Request) {
     profileIds = (profiles || []).map((profile) => profile.id);
   }
 
+  const { data: approvedSwap } = await supabase
+    .from('connection_duty_swap_requests')
+    .select('requested_by,requested_to')
+    .eq('duty_date', tomorrow.iso)
+    .eq('status', 'accepted')
+    .limit(1)
+    .maybeSingle();
+  if (approvedSwap) {
+    const originalIndex = profileIds.indexOf(approvedSwap.requested_by);
+    profileIds = originalIndex >= 0
+      ? profileIds.map((id, index) => index === originalIndex ? approvedSwap.requested_to : id)
+      : [approvedSwap.requested_to];
+    const { data: swappedProfiles } = await supabase
+      .from('user_profiles')
+      .select('id,display_name')
+      .in('id', profileIds);
+    names = (swappedProfiles || []).map((profile) => profile.display_name);
+  }
+
   if (!profileIds.length) return NextResponse.json({ date: tomorrow.iso, weekday: tomorrow.weekday, recipients: 0, sent: 0, reason: 'no_duty_profiles_found' });
   const { data: subscriptions, error } = await supabase
     .from('push_subscriptions')
