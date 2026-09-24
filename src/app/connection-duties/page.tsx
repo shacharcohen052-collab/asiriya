@@ -27,7 +27,7 @@ interface DutyPair {
 }
 
 type SwapStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
-type MemberProfile = { id: string; profile_id: number | null; display_name: string };
+type MemberProfile = { id: string; email: string; profile_id: number | null; display_name: string };
 type SwapRequest = {
   id: string;
   duty_date: string;
@@ -99,8 +99,7 @@ export default function ConnectionDutiesPage() {
   const todayDay = now.getFullYear() === year && now.getMonth() === month ? now.getDate() : -1;
   const monthStart = dateKey(year, month, 1);
   const monthEnd = dateKey(year, month, getDaysInMonth(year, month));
-  const profileByMemberId = useMemo(() => new Map(memberProfiles.filter((item) => item.profile_id != null).map((item) => [item.profile_id as number, item])), [memberProfiles]);
-  const currentProfileNumber = memberProfiles.find((item) => item.id === profile?.id)?.profile_id;
+  const profileByEmail = useMemo(() => new Map(memberProfiles.map((item) => [item.email.toLowerCase(), item])), [memberProfiles]);
 
   const loadSwapRequests = async () => {
     const response = await fetch(`/api/connection-duty-swaps?start=${monthStart}&end=${monthEnd}`, { cache: 'no-store' });
@@ -110,7 +109,7 @@ export default function ConnectionDutiesPage() {
   };
 
   useEffect(() => {
-    void supabase.from('user_profiles').select('id,profile_id,display_name').then(({ data }) => setMemberProfiles((data || []) as MemberProfile[]));
+    void supabase.from('user_profiles').select('id,email,profile_id,display_name').then(({ data }) => setMemberProfiles((data || []) as MemberProfile[]));
   }, []);
 
   useEffect(() => { void loadSwapRequests(); }, [monthStart, monthEnd, profile?.id]);
@@ -176,9 +175,9 @@ export default function ConnectionDutiesPage() {
     if (!accepted) return { memberA: row.memberA, memberB: row.memberB, indexA: row.indexA, indexB: row.indexB };
     const replacement = memberProfiles.find((item) => item.id === accepted.requested_to);
     const replacementIndex = replacement?.profile_id == null ? -1 : MEMBERS.findIndex((member) => member.profileId === replacement.profile_id);
-    const replacementMember = replacement && replacement.profile_id != null ? { ...row.memberA, profileId: replacement.profile_id, displayName: replacement.display_name } : row.memberA;
-    if (accepted.requested_by === profileByMemberId.get(row.memberA.profileId)?.id) return { memberA: replacement ? replacementMember : row.memberA, memberB: row.memberB, indexA: replacementIndex >= 0 ? replacementIndex : row.indexA, indexB: row.indexB };
-    const replacementMemberB = replacement && replacement.profile_id != null ? { ...row.memberB, profileId: replacement.profile_id, displayName: replacement.display_name } : row.memberB;
+    const replacementMember = replacement ? { ...row.memberA, email: replacement.email, profileId: replacement.profile_id ?? row.memberA.profileId, displayName: replacement.display_name } : row.memberA;
+    if (accepted.requested_by === profileByEmail.get(row.memberA.email.toLowerCase())?.id) return { memberA: replacement ? replacementMember : row.memberA, memberB: row.memberB, indexA: replacementIndex >= 0 ? replacementIndex : row.indexA, indexB: row.indexB };
+    const replacementMemberB = replacement ? { ...row.memberB, email: replacement.email, profileId: replacement.profile_id ?? row.memberB.profileId, displayName: replacement.display_name } : row.memberB;
     return { memberA: row.memberA, memberB: replacement ? replacementMemberB : row.memberB, indexA: row.indexA, indexB: replacementIndex >= 0 ? replacementIndex : row.indexB };
   };
 
@@ -234,11 +233,12 @@ export default function ConnectionDutiesPage() {
           const isToday = row.day === todayDay;
           const rowDate = dateKey(year, month, row.day);
           const pair = getEffectivePair(row);
-          const currentProfileIsDuty = currentProfileNumber === pair.memberA.profileId || currentProfileNumber === pair.memberB.profileId;
+          const currentEmail = profile?.email?.toLowerCase();
+          const currentProfileIsDuty = currentEmail === pair.memberA.email.toLowerCase() || currentEmail === pair.memberB.email.toLowerCase();
           const pendingOutgoing = swapRequests.find((request) => request.duty_date === rowDate && request.requested_by === profile?.id && request.status === 'pending');
           const pendingIncoming = swapRequests.find((request) => request.duty_date === rowDate && request.requested_to === profile?.id && request.status === 'pending');
           const isEditing = editingDay === row.day;
-          const candidates = MEMBERS.map((member) => ({ member, profile: profileByMemberId.get(member.profileId) })).filter(({ member, profile: candidateProfile }) => candidateProfile && member.profileId !== pair.memberA.profileId && member.profileId !== pair.memberB.profileId && candidateProfile.id !== profile?.id);
+          const candidates = MEMBERS.map((member) => ({ member, profile: profileByEmail.get(member.email.toLowerCase()) })).filter(({ member, profile: candidateProfile }) => candidateProfile && member.email.toLowerCase() !== pair.memberA.email.toLowerCase() && member.email.toLowerCase() !== pair.memberB.email.toLowerCase() && candidateProfile.id !== profile?.id);
           return <div key={row.day} className={isToday ? 'bg-primary/[0.04]' : ''}>
             <div className={`grid grid-cols-[auto_1fr_1fr_auto] items-center px-4 py-3 transition-colors ${isToday ? 'border-r-4 border-primary bg-primary/10' : 'hover:bg-muted/30'}`}>
               <div className="w-20"><p className={`text-sm font-bold ${isToday ? 'text-primary' : 'text-foreground'}`}>{row.day}/{month + 1}</p><p className="text-2xs text-muted-foreground">{row.weekday}</p>{isToday && <span className="inline-flex mt-1 text-[10px] font-bold text-primary bg-primary/15 rounded-full px-2 py-0.5">היום</span>}</div>
