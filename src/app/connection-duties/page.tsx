@@ -67,7 +67,8 @@ function generateMonthlyRoster(year: number, month: number): DutyPair[] {
   });
 }
 
-function AvatarBadge({ name, index, highlight = false }: { name: string; index: number; highlight?: boolean }) {
+function AvatarBadge({ name, index, highlight = false, onJoin, joining = false }: { name: string; index: number; highlight?: boolean; onJoin?: () => void; joining?: boolean }) {
+  if (name === 'להצטרף' && onJoin) return <button type="button" onClick={onJoin} disabled={joining} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary/50 bg-primary/5 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-50"><span className="flex h-8 w-8 items-center justify-center rounded-full border border-primary/40 text-lg">+</span>{joining ? 'מצטרף...' : 'הצטרף'}</button>;
   return (
     <div className={`flex items-center gap-2 ${highlight ? 'font-bold' : ''}`}>
       <div className={`w-8 h-8 rounded-full ${getAvatarColor(index)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>{getInitials(name)}</div>
@@ -96,6 +97,7 @@ export default function ConnectionDutiesPage() {
   const [swapBusy, setSwapBusy] = useState<string | number | null>(null);
   const [memberProfiles, setMemberProfiles] = useState<(MemberProfile & { is_removed?: boolean; connection_duty_enabled?: boolean })[]>([]);
   const [savedDuties, setSavedDuties] = useState<DutyApiRow[]>([]);
+  const [claimBusy, setClaimBusy] = useState<string | null>(null);
   const { profile } = useAuth();
 
   const roster = useMemo(() => {
@@ -253,6 +255,19 @@ export default function ConnectionDutiesPage() {
     toast.success(data.refreshed ? 'נוספת לסידור. התורנויות מעודכנות משבועיים קדימה.' : 'נוספת לסידור מהסבב הבא.');
   };
 
+  const claimDutySlot = async (row: DutyPair, slot: 'member1' | 'member2') => {
+    const key = `${row.isoDate}-${slot}`;
+    setClaimBusy(key);
+    const response = await fetch('/api/connection-duties/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dutyDate: row.isoDate, slot }) });
+    const data = await response.json() as { error?: string; push?: { reason?: string } };
+    setClaimBusy(null);
+    if (!response.ok) return toast.error(data.error === 'slot_taken' ? 'מישהו כבר הצטרף למשבצת הזו.' : 'לא ניתן להצטרף למשבצת הזו.');
+    const refreshed = await fetch(`/api/connection-duties?start=${monthStart}&end=${monthEnd}`, { cache: 'no-store' });
+    if (refreshed.ok) { const next = await refreshed.json() as { duties?: DutyApiRow[] }; setSavedDuties(next.duties || []); }
+    if (data.push?.reason === 'recipient_has_no_subscription') toast.success('הצטרפת לתורנות. לחבר השני אין כרגע התראות פעילות.');
+    else toast.success('הצטרפת לתורנות והחבר השני קיבל הודעה.');
+  };
+
   function previousMonth() { if (month === 0) { setMonth(11); setYear((value) => value - 1); } else setMonth((value) => value - 1); }
   function nextMonth() { if (month === 11) { setMonth(0); setYear((value) => value + 1); } else setMonth((value) => value + 1); }
   function goToday() { setYear(Number(todayIso.slice(0, 4))); setMonth(Number(todayIso.slice(5, 7)) - 1); }
@@ -295,7 +310,7 @@ export default function ConnectionDutiesPage() {
           return <div key={row.day} className={isToday ? 'bg-primary/[0.04]' : ''}>
             <div className={`grid grid-cols-[auto_1fr_1fr_auto] items-center px-4 py-3 transition-colors ${isToday ? 'border-r-4 border-primary bg-primary/10' : 'hover:bg-muted/30'}`}>
               <div className="w-20"><p className={`text-sm font-bold ${isToday ? 'text-primary' : 'text-foreground'}`}>{row.date.split('/').slice(0, 2).join('/')}</p><p className="text-2xs text-muted-foreground">{row.weekday}</p>{isToday && <span className="inline-flex mt-1 text-[10px] font-bold text-primary bg-primary/15 rounded-full px-2 py-0.5">היום</span>}</div>
-              <div className="px-4"><AvatarBadge name={pair.memberA.displayName} index={pair.indexA} highlight={isToday} /></div><div className="px-4"><AvatarBadge name={pair.memberB.displayName} index={pair.indexB} highlight={isToday} /></div>
+              <div className="px-4"><AvatarBadge name={pair.memberA.displayName} index={pair.indexA} highlight={isToday} onJoin={pair.memberA.displayName === 'להצטרף' && profile ? () => void claimDutySlot(row, 'member1') : undefined} joining={claimBusy === `${row.isoDate}-member1`} /></div><div className="px-4"><AvatarBadge name={pair.memberB.displayName} index={pair.indexB} highlight={isToday} onJoin={pair.memberB.displayName === 'להצטרף' && profile ? () => void claimDutySlot(row, 'member2') : undefined} joining={claimBusy === `${row.isoDate}-member2`} /></div>
               <div className="w-8 flex justify-center">{currentProfileIsDuty && !pendingOutgoing && <button onClick={() => setEditingDay(isEditing ? null : row.day)} className={`p-1.5 rounded-lg transition-colors ${isEditing ? 'bg-primary/15 text-primary' : 'hover:bg-muted'}`} aria-label="בקש החלפה"><Edit3 size={14} className={isEditing ? 'text-primary' : 'text-muted-foreground'} /></button>}</div>
             </div>
             {(pendingOutgoing || pendingIncoming || isEditing) && <div className="px-4 pb-3 space-y-2">
