@@ -18,13 +18,31 @@ function daysInMonth(iso: string) { const date = dateFromIso(iso); return new Da
 function isSecondTuesday(iso: string) { const date = dateFromIso(iso); return date.getUTCDay() === 2 && date.getUTCDate() >= 8 && date.getUTCDate() <= 14; }
 function isAuthorized(request: Request) { const secret = process.env.CRON_SECRET || process.env.PUSH_CRON_SECRET; return Boolean(secret && request.headers.get('authorization') === `Bearer ${secret}`); }
 
-function pairForDay(profiles: Profile[], dayIndex: number, seed: number): [number, number] {
-  const pairs: [number, number][] = [];
-  for (let first = 0; first < profiles.length; first += 1) for (let second = first + 1; second < profiles.length; second += 1) pairs.push([first, second]);
-  const sorted = [...pairs].sort((a, b) => (((a[0] * 37 + a[1] * 17 + 1) * seed) % 1009) - (((b[0] * 37 + b[1] * 17 + 1) * seed) % 1009));
-  const previous = dayIndex > 0 ? pairForDay(profiles, dayIndex - 1, seed) : null;
-  const available = sorted.filter(([first, second]) => !previous || (!previous.includes(first) && !previous.includes(second)));
-  return (available.length ? available : sorted)[dayIndex % (available.length || sorted.length)];
+function buildMonthlyRows(profiles: Profile[], start: string) {
+  const pairPool: [number, number][] = [];
+  for (let first = 0; first < profiles.length; first += 1) for (let second = first + 1; second < profiles.length; second += 1) pairPool.push([first, second]);
+  const counts = profiles.map(() => 0);
+  const usedPairs = new Set<string>();
+  const seed = Number(start.replaceAll('-', ''));
+  const score = (pair: [number, number], dayIndex: number) => ((pair[0] * 7919 + pair[1] * 104729 + dayIndex * 1543 + seed) % 1000003);
+  const rows = [];
+  for (let dayIndex = 0; dayIndex < daysInMonth(start); dayIndex += 1) {
+    const candidates = pairPool.filter(([first, second]) => !usedPairs.has(`${first}-${second}`));
+    if (!candidates.length) candidates.push(...pairPool);
+    candidates.sort((a, b) => {
+      const maxA = Math.max(counts[a[0]], counts[a[1]]);
+      const maxB = Math.max(counts[b[0]], counts[b[1]]);
+      const sumA = counts[a[0]] + counts[a[1]];
+      const sumB = counts[b[0]] + counts[b[1]];
+      return maxA - maxB || sumA - sumB || score(a, dayIndex) - score(b, dayIndex);
+    });
+    const [first, second] = candidates[0];
+    usedPairs.add(`${first}-${second}`);
+    counts[first] += 1;
+    counts[second] += 1;
+    rows.push({ duty_date: addDays(start, dayIndex), member1_id: profiles[first].id, member2_id: profiles[second].id, is_manual_override: false, note: `סידור חודשי מאוזן עבור ${start.slice(0, 7)}` });
+  }
+  return rows;
 }
 
 async function generateMonth(start: string) {
@@ -36,8 +54,7 @@ async function generateMonth(start: string) {
   if (activeProfiles.length < 2) return { start, end, members: activeProfiles.length, rows: 0, reason: 'not_enough_duty_members' };
   const { error: deleteError } = await supabase.from('connection_duties').delete().gte('duty_date', start).lte('duty_date', end).eq('is_manual_override', false);
   if (deleteError) throw deleteError;
-  const seed = Number(start.replaceAll('-', ''));
-  const rows = Array.from({ length: daysInMonth(start) }, (_, dayIndex) => { const [first, second] = pairForDay(activeProfiles, dayIndex, seed); return { duty_date: addDays(start, dayIndex), member1_id: activeProfiles[first].id, member2_id: activeProfiles[second].id, is_manual_override: false, note: `סידור חודשי עבור ${start.slice(0, 7)}` }; });
+  const rows = buildMonthlyRows(activeProfiles, start);
   const { error: insertError } = await supabase.from('connection_duties').insert(rows);
   if (insertError) throw insertError;
   return { start, end, members: activeProfiles.length, rows: rows.length };

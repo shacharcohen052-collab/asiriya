@@ -112,7 +112,6 @@ export default function ConnectionDutiesPage() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
   const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
-  const todayRow = roster.find((row) => row.isoDate === todayIso);
   const currentProfile = memberProfiles.find((item) => item.id === profile?.id);
   const profileByEmail = useMemo(() => new Map(memberProfiles.map((item) => [item.email.toLowerCase(), item])), [memberProfiles]);
 
@@ -295,16 +294,11 @@ export default function ConnectionDutiesPage() {
         <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="חודש הבא"><ChevronLeft size={20} className="text-muted-foreground" /></button>
       </div>
 
+      <button onClick={goToday} className="mx-auto mb-5 flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/10"><Calendar size={16} /> חזור להיום</button>
+
       {profile && currentProfile?.connection_duty_enabled === false && <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 card-shadow mb-5 flex items-center justify-between gap-4"><div><p className="font-semibold text-foreground">עדיין לא הצטרפת לסידור תורני החיבור</p><p className="text-xs text-muted-foreground mt-1">לחיצה תכניס אותך לסידורים שמתחילים בעוד שבועיים ומעלה.</p></div><button onClick={() => void joinDutyRoster()} className="btn-primary whitespace-nowrap text-sm">הצטרף לסידור תורני החיבור</button></div>}
 
-      {profile && <div className="bg-card border border-primary/20 rounded-2xl p-4 card-shadow mb-5"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold text-primary">התורנויות שלי בחודש הזה</p><p className="text-sm font-semibold text-foreground mt-1">{myDutyRows.length ? `אתה תורן ב־${myDutyRows.length} ימים` : 'אין לך תורנויות בחודש הזה'}</p></div><div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">{myDutyRows.length}</div></div>{myDutyRows.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{myDutyRows.map((row) => <span key={row.isoDate} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{row.date.split('/').slice(0, 2).join('/')}</span>)}</div>}</div>}
-
-      <div className={`mb-5 rounded-2xl border p-4 transition-all ${todayRow ? 'border-primary/40 bg-gradient-to-l from-primary/15 via-primary/5 to-card shadow-lg shadow-primary/10' : 'border-border bg-card'}`}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3"><div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${todayRow ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}><Calendar size={21} /></div><div><p className="text-xs font-bold text-primary uppercase tracking-wide">תורנות היום</p><p className="text-sm font-bold text-foreground">{todayRow ? `${todayRow.memberA.displayName} + ${todayRow.memberB.displayName}` : 'היום נמצא במחזור אחר'}</p></div></div>
-          <button onClick={goToday} className="btn-secondary text-xs flex items-center gap-1.5 py-2 px-3"><Calendar size={14} /> היום</button>
-        </div>
-      </div>
+      {profile && <div className="bg-card border border-primary/20 rounded-2xl p-4 card-shadow mb-5"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold text-primary">התורנויות שלי בחודש</p><p className="text-sm font-semibold text-foreground mt-1">{myDutyRows.length ? `אתה תורן ב־${myDutyRows.length} ימים` : 'אין לך תורנויות בחודש'}</p></div><div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">{myDutyRows.length}</div></div>{myDutyRows.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{myDutyRows.map((row) => <span key={row.isoDate} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{row.date.split('/').slice(0, 2).join('/')}</span>)}</div>}</div>}
 
       <div className="bg-card border border-border rounded-xl p-4 card-shadow mb-5 flex items-center justify-between gap-4"><div className="flex items-center gap-3"><div className={`w-9 h-9 rounded-xl flex items-center justify-center ${remindersEnabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{remindersEnabled ? <Bell size={18} /> : <BellOff size={18} />}</div><div><p className="text-sm font-semibold text-foreground">התראות תורנות</p><p className="text-xs text-muted-foreground">קבל הודעה כשמחר תורך או כשמישהו מבקש החלפה</p></div></div><button type="button" role="switch" aria-checked={remindersEnabled} disabled={reminderBusy} onClick={() => void toggleDutyReminder()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${remindersEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${remindersEnabled ? 'translate-x-1' : 'translate-x-6'}`} /></button></div>
 
