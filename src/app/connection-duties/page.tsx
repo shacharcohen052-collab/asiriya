@@ -98,6 +98,7 @@ export default function ConnectionDutiesPage() {
   const [memberProfiles, setMemberProfiles] = useState<(MemberProfile & { is_removed?: boolean; connection_duty_enabled?: boolean })[]>([]);
   const [savedDuties, setSavedDuties] = useState<DutyApiRow[]>([]);
   const [claimBusy, setClaimBusy] = useState<string | null>(null);
+  const [showPast, setShowPast] = useState(false);
   const { profile } = useAuth();
 
   const roster = useMemo(() => {
@@ -271,6 +272,15 @@ export default function ConnectionDutiesPage() {
   function previousMonth() { if (month === 0) { setMonth(11); setYear((value) => value - 1); } else setMonth((value) => value - 1); }
   function nextMonth() { if (month === 11) { setMonth(0); setYear((value) => value + 1); } else setMonth((value) => value + 1); }
   function goToday() { setYear(Number(todayIso.slice(0, 4))); setMonth(Number(todayIso.slice(5, 7)) - 1); }
+  useEffect(() => { setShowPast(false); }, [year, month]);
+
+  const myDutyRows = profile?.email ? roster.filter((row) => {
+    const pair = getEffectivePair(row);
+    const email = profile.email.toLowerCase();
+    return pair.memberA.email?.toLowerCase() === email || pair.memberB.email?.toLowerCase() === email;
+  }) : [];
+  const pastRows = roster.filter((row) => row.isoDate < todayIso);
+  const rowsToRender = showPast ? roster : roster.filter((row) => row.isoDate >= todayIso);
 
   return (
     <AppLayout activeRoute="/connection-duties">
@@ -287,6 +297,8 @@ export default function ConnectionDutiesPage() {
 
       {profile && currentProfile?.connection_duty_enabled === false && <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 card-shadow mb-5 flex items-center justify-between gap-4"><div><p className="font-semibold text-foreground">עדיין לא הצטרפת לסידור תורני החיבור</p><p className="text-xs text-muted-foreground mt-1">לחיצה תכניס אותך לסידורים שמתחילים בעוד שבועיים ומעלה.</p></div><button onClick={() => void joinDutyRoster()} className="btn-primary whitespace-nowrap text-sm">הצטרף לסידור תורני החיבור</button></div>}
 
+      {profile && <div className="bg-card border border-primary/20 rounded-2xl p-4 card-shadow mb-5"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold text-primary">התורנויות שלי בחודש הזה</p><p className="text-sm font-semibold text-foreground mt-1">{myDutyRows.length ? `אתה תורן ב־${myDutyRows.length} ימים` : 'אין לך תורנויות בחודש הזה'}</p></div><div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">{myDutyRows.length}</div></div>{myDutyRows.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{myDutyRows.map((row) => <span key={row.isoDate} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{row.date.split('/').slice(0, 2).join('/')}</span>)}</div>}</div>}
+
       <div className={`mb-5 rounded-2xl border p-4 transition-all ${todayRow ? 'border-primary/40 bg-gradient-to-l from-primary/15 via-primary/5 to-card shadow-lg shadow-primary/10' : 'border-border bg-card'}`}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3"><div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${todayRow ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}><Calendar size={21} /></div><div><p className="text-xs font-bold text-primary uppercase tracking-wide">תורנות היום</p><p className="text-sm font-bold text-foreground">{todayRow ? `${todayRow.memberA.displayName} + ${todayRow.memberB.displayName}` : 'היום נמצא במחזור אחר'}</p></div></div>
@@ -296,8 +308,10 @@ export default function ConnectionDutiesPage() {
 
       <div className="bg-card border border-border rounded-xl p-4 card-shadow mb-5 flex items-center justify-between gap-4"><div className="flex items-center gap-3"><div className={`w-9 h-9 rounded-xl flex items-center justify-center ${remindersEnabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{remindersEnabled ? <Bell size={18} /> : <BellOff size={18} />}</div><div><p className="text-sm font-semibold text-foreground">התראות תורנות</p><p className="text-xs text-muted-foreground">קבל הודעה כשמחר תורך או כשמישהו מבקש החלפה</p></div></div><button type="button" role="switch" aria-checked={remindersEnabled} disabled={reminderBusy} onClick={() => void toggleDutyReminder()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${remindersEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${remindersEnabled ? 'translate-x-1' : 'translate-x-6'}`} /></button></div>
 
+      {pastRows.length > 0 && <button type="button" onClick={() => setShowPast((value) => !value)} className="mb-3 flex w-full items-center justify-between rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted"><span>{showPast ? 'הסתר היסטוריה' : `הצג היסטוריה · ${pastRows.length} ימים שעברו`}</span><span>{showPast ? '▲' : '▼'}</span></button>}
+
       <div className="bg-card border border-border rounded-xl card-shadow overflow-hidden"><div className="grid grid-cols-[auto_1fr_1fr_auto] text-xs font-semibold text-muted-foreground bg-muted/50 px-4 py-3 border-b border-border"><div className="w-20">תאריך</div><div className="px-4">חבר א׳</div><div className="px-4">חבר ב׳</div><div className="w-8" /></div>
-        <div className="divide-y divide-border">{roster.length === 0 ? <div className="p-8 text-center text-sm text-muted-foreground">הסידור לחודש הזה עדיין לא נוצר. הוא מתעדכן אוטומטית ביום שלישי השני בכל חודש.</div> : roster.map((row) => {
+        <div className="divide-y divide-border">{roster.length === 0 ? <div className="p-8 text-center text-sm text-muted-foreground">הסידור לחודש הזה עדיין לא נוצר. הוא מתעדכן אוטומטית ביום שלישי השני בכל חודש.</div> : rowsToRender.length === 0 ? <div className="p-8 text-center text-sm text-muted-foreground">כל ימי החודש כבר עברו. אפשר לפתוח את ההיסטוריה כדי לצפות בהם.</div> : rowsToRender.map((row) => {
           const isToday = row.isoDate === todayIso;
           const rowDate = row.isoDate;
           const pair = getEffectivePair(row);
