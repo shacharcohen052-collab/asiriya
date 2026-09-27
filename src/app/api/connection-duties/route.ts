@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type Profile = { id: string; email: string; display_name: string };
-type DutyRow = { duty_date: string; member1_id: string | null; member2_id: string | null; is_manual_override: boolean };
+type DutyRow = { duty_date: string; member1_id: string | null; member2_id: string | null; member3_id: string | null; is_manual_override: boolean };
 
 function adminClient() { return createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } }); }
 function israelDate(now = new Date()) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(now); }
@@ -65,13 +65,13 @@ async function getDuties(request: Request) {
   const url = new URL(request.url);
   const start = url.searchParams.get('start') || addDays(israelDate(), -31);
   const end = url.searchParams.get('end') || addDays(israelDate(), 62);
-  const { data, error } = await supabase.from('connection_duties').select('duty_date,member1_id,member2_id,is_manual_override').gte('duty_date', start).lte('duty_date', end).order('duty_date', { ascending: true }).limit(120);
+  const { data, error } = await supabase.from('connection_duties').select('duty_date,member1_id,member2_id,member3_id,is_manual_override').gte('duty_date', start).lte('duty_date', end).order('duty_date', { ascending: true }).limit(120);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const rows = (data || []) as DutyRow[];
-  const ids = [...new Set(rows.flatMap((row) => [row.member1_id, row.member2_id]).filter(Boolean))] as string[];
+  const ids = [...new Set(rows.flatMap((row) => [row.member1_id, row.member2_id, row.member3_id]).filter(Boolean))] as string[];
   const { data: profiles } = ids.length ? await supabase.from('user_profiles').select('id,email,display_name,is_removed,connection_duty_enabled').in('id', ids).limit(200) : { data: [] as Array<Profile & { is_removed: boolean; connection_duty_enabled: boolean }> };
   const byId = new Map((profiles || []).map((profile) => [profile.id, profile]));
-  return NextResponse.json({ duties: rows.map((row) => ({ ...row, member1: row.member1_id ? byId.get(row.member1_id) || null : null, member2: row.member2_id ? byId.get(row.member2_id) || null : null })) });
+  return NextResponse.json({ duties: rows.map((row) => ({ ...row, member1: row.member1_id ? byId.get(row.member1_id) || null : null, member2: row.member2_id ? byId.get(row.member2_id) || null : null, member3: row.member3_id ? byId.get(row.member3_id) || null : null })) });
 }
 
 async function runScheduledGeneration(request: Request) {

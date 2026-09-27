@@ -33,14 +33,24 @@ export async function POST(request: Request) {
   const sessionClient = await createClient();
   const { data: { user } } = await sessionClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const body = await request.json() as { dutyDate?: string; slot?: Slot };
-  if (!body.dutyDate || (body.slot !== 'member1' && body.slot !== 'member2')) return NextResponse.json({ error: 'invalid_slot' }, { status: 400 });
+  const body = await request.json() as { dutyDate?: string; slot?: Slot; action?: 'fill' | 'volunteer' };
+  if (!body.dutyDate || (body.action !== 'volunteer' && body.slot !== 'member1' && body.slot !== 'member2')) return NextResponse.json({ error: 'invalid_slot' }, { status: 400 });
 
   const admin = adminClient();
   const { data: claimant } = await admin.from('user_profiles').select('id,display_name,is_approved,is_removed,connection_duty_enabled').eq('id', user.id).maybeSingle();
   if (!claimant?.is_approved || claimant.is_removed) return NextResponse.json({ error: 'member_not_eligible' }, { status: 403 });
-  const { data: duty, error: dutyError } = await admin.from('connection_duties').select('duty_date,member1_id,member2_id').eq('duty_date', body.dutyDate).maybeSingle();
+  const { data: duty, error: dutyError } = await admin.from('connection_duties').select('duty_date,member1_id,member2_id,member3_id').eq('duty_date', body.dutyDate).maybeSingle();
   if (dutyError || !duty) return NextResponse.json({ error: 'duty_not_found' }, { status: 404 });
+
+  if (body.action === 'volunteer') {
+    if ([duty.member1_id, duty.member2_id, duty.member3_id].includes(user.id)) return NextResponse.json({ error: 'already_joined' }, { status: 409 });
+    if (duty.member3_id) return NextResponse.json({ error: 'volunteer_slot_taken' }, { status: 409 });
+    const { data: updated, error: updateError } = await admin.from('connection_duties').update({ member3_id: user.id, note: 'הצטרפות מתנדב לזוג תורנות' }).eq('duty_date', body.dutyDate).is('member3_id', null).select('duty_date,member1_id,member2_id,member3_id').maybeSingle();
+    if (updateError || !updated) return NextResponse.json({ error: 'volunteer_slot_taken' }, { status: 409 });
+    const partnerIds = [duty.member1_id, duty.member2_id].filter((id): id is string => Boolean(id));
+    const pushResults = await Promise.all(partnerIds.map((partnerId) => sendPush(partnerId, { title: 'חבר הצטרף לזוג תורנות', body: `${claimant.display_name || 'חבר'} הצטרף בהתנדבות לתורנות החיבור בתאריך ${body.dutyDate}`, url: '/connection-duties', tag: `duty-volunteer-${body.dutyDate}-${user.id}` })));
+    return NextResponse.json({ duty: updated, push: pushResults });
+  }
 
   const column = body.slot === 'member1' ? 'member1_id' : 'member2_id';
   const otherId = body.slot === 'member1' ? duty.member2_id : duty.member1_id;
@@ -54,7 +64,7 @@ export async function POST(request: Request) {
   await admin.from('user_profiles').update({ connection_duty_enabled: true }).eq('id', user.id);
   let updateQuery = admin.from('connection_duties').update({ [column]: user.id, note: 'הצטרפות ידנית למשבצת תורנות' }).eq('duty_date', body.dutyDate);
   updateQuery = existingId ? updateQuery.eq(column, existingId) : updateQuery.is(column, null);
-  const { data: updated, error: updateError } = await updateQuery.select('duty_date,member1_id,member2_id').maybeSingle();
+  const { data: updated, error: updateError } = await updateQuery.select('duty_date,member1_id,member2_id,member3_id').maybeSingle();
   if (updateError || !updated) return NextResponse.json({ error: 'slot_taken' }, { status: 409 });
 
   let push: { sent: number; reason: string } = { sent: 0, reason: 'no_partner' };

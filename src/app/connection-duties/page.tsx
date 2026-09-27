@@ -23,13 +23,14 @@ interface DutyPair {
   weekday: string;
   memberA: typeof MEMBERS[0];
   memberB: typeof MEMBERS[0];
+  memberC: typeof MEMBERS[0] | null;
   indexA: number;
   indexB: number;
 }
 
 type SwapStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
 type MemberProfile = { id: string; email: string; profile_id: number | null; display_name: string; is_removed?: boolean; connection_duty_enabled?: boolean };
-type DutyApiRow = { duty_date: string; member1: MemberProfile | null; member2: MemberProfile | null; is_manual_override: boolean };
+type DutyApiRow = { duty_date: string; member1: MemberProfile | null; member2: MemberProfile | null; member3: MemberProfile | null; is_manual_override: boolean };
 type SwapRequest = {
   id: string;
   duty_date: string;
@@ -63,7 +64,7 @@ function generateMonthlyRoster(year: number, month: number): DutyPair[] {
     const candidates = shuffled.filter(([a, b]) => !previousPair || (!previousPair.includes(a) && !previousPair.includes(b)));
     const [iA, iB] = (candidates.length ? candidates : shuffled)[offset % (candidates.length ? candidates.length : shuffled.length)];
     previousPair = [iA, iB];
-    return { day, isoDate: dateKey(year, month, day), date: `${day}/${month + 1}/${year}`, weekday: WEEKDAYS_HE[date.getDay()], memberA: members[iA], memberB: members[iB], indexA: iA, indexB: iB };
+    return { day, isoDate: dateKey(year, month, day), date: `${day}/${month + 1}/${year}`, weekday: WEEKDAYS_HE[date.getDay()], memberA: members[iA], memberB: members[iB], memberC: null, indexA: iA, indexB: iB };
   });
 }
 
@@ -91,6 +92,7 @@ export default function ConnectionDutiesPage() {
   const [month, setMonth] = useState(Number(todayIso.slice(5, 7)) - 1);
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [reminderBusy, setReminderBusy] = useState(false);
+  const [notificationPrompted, setNotificationPrompted] = useState(false);
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<Record<number, string>>({});
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>([]);
@@ -106,7 +108,8 @@ export default function ConnectionDutiesPage() {
     return savedDuties.map((duty, index) => {
       const date = new Date(`${duty.duty_date}T12:00:00`);
       const toMember = (profile: MemberProfile | null, fallbackIndex: number) => profile && !profile.is_removed && profile.connection_duty_enabled !== false ? { ...MEMBERS.find((member) => member.email.toLowerCase() === profile.email.toLowerCase()), ...profile, profileId: profile.profile_id ?? 0, displayName: profile.display_name } as typeof MEMBERS[0] : { profileId: 0, email: '', displayName: 'להצטרף', lifeWork: null, relationshipStatus: null, hobbies: null, pathDuration: null, connectionStrength: null, desiredQuality: null } as typeof MEMBERS[0];
-      return { day: date.getDate(), isoDate: duty.duty_date, date: `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`, weekday: WEEKDAYS_HE[date.getDay()], memberA: toMember(duty.member1, index), memberB: toMember(duty.member2, index + 1), indexA: index % 12, indexB: (index + 1) % 12 };
+      const memberC = duty.member3 && !duty.member3.is_removed && duty.member3.connection_duty_enabled !== false ? { ...MEMBERS.find((member) => member.email.toLowerCase() === duty.member3!.email.toLowerCase()), ...duty.member3, profileId: duty.member3.profile_id ?? 0, displayName: duty.member3.display_name } as typeof MEMBERS[0] : null;
+      return { day: date.getDate(), isoDate: duty.duty_date, date: `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`, weekday: WEEKDAYS_HE[date.getDay()], memberA: toMember(duty.member1, index), memberB: toMember(duty.member2, index + 1), memberC, indexA: index % 12, indexB: (index + 1) % 12 };
     });
   }, [savedDuties]);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -172,6 +175,13 @@ export default function ConnectionDutiesPage() {
     void loadPushState();
     return () => { cancelled = true; };
   }, [profile?.id]);
+
+  useEffect(() => {
+    if (!profile?.id || remindersEnabled || reminderBusy || notificationPrompted) return undefined;
+    setNotificationPrompted(true);
+    const timer = window.setTimeout(() => { void toggleDutyReminder(); }, 700);
+    return () => window.clearTimeout(timer);
+  }, [profile?.id, remindersEnabled, reminderBusy, notificationPrompted]);
 
   const toggleDutyReminder = async () => {
     const next = !remindersEnabled;
@@ -255,13 +265,13 @@ export default function ConnectionDutiesPage() {
     toast.success(data.refreshed ? 'נוספת לסידור. התורנויות מעודכנות משבועיים קדימה.' : 'נוספת לסידור מהסבב הבא.');
   };
 
-  const claimDutySlot = async (row: DutyPair, slot: 'member1' | 'member2') => {
+  const claimDutySlot = async (row: DutyPair, slot: 'member1' | 'member2' | 'volunteer') => {
     const key = `${row.isoDate}-${slot}`;
     setClaimBusy(key);
-    const response = await fetch('/api/connection-duties/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dutyDate: row.isoDate, slot }) });
+    const response = await fetch('/api/connection-duties/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(slot === 'volunteer' ? { dutyDate: row.isoDate, action: 'volunteer' } : { dutyDate: row.isoDate, slot }) });
     const data = await response.json() as { error?: string; push?: { reason?: string } };
     setClaimBusy(null);
-    if (!response.ok) return toast.error(data.error === 'slot_taken' ? 'מישהו כבר הצטרף למשבצת הזו.' : 'לא ניתן להצטרף למשבצת הזו.');
+    if (!response.ok) return toast.error(data.error === 'volunteer_slot_taken' ? 'כבר הצטרף מתנדב לזוג הזה.' : data.error === 'slot_taken' ? 'מישהו כבר הצטרף למשבצת הזו.' : 'לא ניתן להצטרף למשבצת הזו.');
     const refreshed = await fetch(`/api/connection-duties?start=${monthStart}&end=${monthEnd}`, { cache: 'no-store' });
     if (refreshed.ok) { const next = await refreshed.json() as { duties?: DutyApiRow[] }; setSavedDuties(next.duties || []); }
     if (data.push?.reason === 'recipient_has_no_subscription') toast.success('הצטרפת לתורנות. לחבר השני אין כרגע התראות פעילות.');
@@ -276,7 +286,7 @@ export default function ConnectionDutiesPage() {
   const myDutyRows = profile?.email ? roster.filter((row) => {
     const pair = getEffectivePair(row);
     const email = profile.email.toLowerCase();
-    return pair.memberA.email?.toLowerCase() === email || pair.memberB.email?.toLowerCase() === email;
+    return pair.memberA.email?.toLowerCase() === email || pair.memberB.email?.toLowerCase() === email || row.memberC?.email?.toLowerCase() === email;
   }) : [];
   const pastRows = roster.filter((row) => row.isoDate < todayIso);
   const rowsToRender = showPast ? roster : roster.filter((row) => row.isoDate >= todayIso);
@@ -300,11 +310,11 @@ export default function ConnectionDutiesPage() {
 
       {profile && <div className="bg-card border border-primary/20 rounded-2xl p-4 card-shadow mb-5"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold text-primary">התורנויות שלי בחודש</p><p className="text-sm font-semibold text-foreground mt-1">{myDutyRows.length ? `אתה תורן ב־${myDutyRows.length} ימים` : 'אין לך תורנויות בחודש'}</p></div><div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">{myDutyRows.length}</div></div>{myDutyRows.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{myDutyRows.map((row) => <span key={row.isoDate} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{row.date.split('/').slice(0, 2).join('/')}</span>)}</div>}</div>}
 
-      <div className="bg-card border border-border rounded-xl p-4 card-shadow mb-5 flex items-center justify-between gap-4"><div className="flex items-center gap-3"><div className={`w-9 h-9 rounded-xl flex items-center justify-center ${remindersEnabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{remindersEnabled ? <Bell size={18} /> : <BellOff size={18} />}</div><div><p className="text-sm font-semibold text-foreground">התראות תורנות</p><p className="text-xs text-muted-foreground">קבל הודעה כשמחר תורך או כשמישהו מבקש החלפה</p></div></div><button type="button" role="switch" aria-checked={remindersEnabled} disabled={reminderBusy} onClick={() => void toggleDutyReminder()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${remindersEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${remindersEnabled ? 'translate-x-1' : 'translate-x-6'}`} /></button></div>
+      <div className="bg-card border border-border rounded-xl p-4 card-shadow mb-5 flex items-center justify-between gap-4"><div className="flex items-center gap-3"><div className={`w-9 h-9 rounded-xl flex items-center justify-center ${remindersEnabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{remindersEnabled ? <Bell size={18} /> : <BellOff size={18} />}</div><div><p className="text-sm font-semibold text-foreground">התראות תורנות</p><p className="text-xs text-muted-foreground">{remindersEnabled ? 'פעילות במכשיר · שינוי הביטול מתבצע דרך ההגדרות' : 'מבקש הרשאה אוטומטית להפעלת התראות במכשיר'}</p></div></div><button type="button" role="switch" aria-checked={remindersEnabled} disabled={reminderBusy} onClick={() => remindersEnabled ? toast.info('כדי לבטל את ההתראות, היכנס להגדרות המכשיר.') : void toggleDutyReminder()} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${remindersEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${remindersEnabled ? 'translate-x-1' : 'translate-x-6'}`} /></button></div>
 
       {pastRows.length > 0 && <button type="button" onClick={() => setShowPast((value) => !value)} className="mb-3 flex w-full items-center justify-between rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted"><span>{showPast ? 'הסתר היסטוריה' : `הצג היסטוריה · ${pastRows.length} ימים שעברו`}</span><span>{showPast ? '▲' : '▼'}</span></button>}
 
-      <div className="bg-card border border-border rounded-xl card-shadow overflow-hidden"><div className="grid grid-cols-[auto_1fr_1fr_auto] text-xs font-semibold text-muted-foreground bg-muted/50 px-4 py-3 border-b border-border"><div className="w-20">תאריך</div><div className="px-4">חבר א׳</div><div className="px-4">חבר ב׳</div><div className="w-8" /></div>
+      <div className="bg-card border border-border rounded-xl card-shadow overflow-hidden"><div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] text-xs font-semibold text-muted-foreground bg-muted/50 px-4 py-3 border-b border-border"><div className="w-20">תאריך</div><div className="px-4">חבר א׳</div><div className="px-4">חבר ב׳</div><div className="px-4">הצטרפות</div><div className="w-8" /></div>
         <div className="divide-y divide-border">{roster.length === 0 ? <div className="p-8 text-center text-sm text-muted-foreground">הסידור לחודש הזה עדיין לא נוצר. הוא מתעדכן אוטומטית ביום שלישי השני בכל חודש.</div> : rowsToRender.length === 0 ? <div className="p-8 text-center text-sm text-muted-foreground">כל ימי החודש כבר עברו. אפשר לפתוח את ההיסטוריה כדי לצפות בהם.</div> : rowsToRender.map((row) => {
           const isToday = row.isoDate === todayIso;
           const rowDate = row.isoDate;
@@ -316,9 +326,9 @@ export default function ConnectionDutiesPage() {
           const isEditing = editingDay === row.day;
           const candidates = memberProfiles.filter((candidateProfile) => candidateProfile.connection_duty_enabled !== false && !candidateProfile.is_removed && candidateProfile.email.toLowerCase() !== pair.memberA.email.toLowerCase() && candidateProfile.email.toLowerCase() !== pair.memberB.email.toLowerCase() && candidateProfile.id !== profile?.id);
           return <div key={row.day} className={isToday ? 'bg-primary/[0.04]' : ''}>
-            <div className={`grid grid-cols-[auto_1fr_1fr_auto] items-center px-4 py-3 transition-colors ${isToday ? 'border-r-4 border-primary bg-primary/10' : 'hover:bg-muted/30'}`}>
+            <div className={`grid grid-cols-[auto_1fr_1fr_1fr_auto] items-center px-4 py-3 transition-colors ${isToday ? 'border-r-4 border-primary bg-primary/10' : 'hover:bg-muted/30'}`}>
               <div className="w-20"><p className={`text-sm font-bold ${isToday ? 'text-primary' : 'text-foreground'}`}>{row.date.split('/').slice(0, 2).join('/')}</p><p className="text-2xs text-muted-foreground">{row.weekday}</p>{isToday && <span className="inline-flex mt-1 text-[10px] font-bold text-primary bg-primary/15 rounded-full px-2 py-0.5">היום</span>}</div>
-              <div className="px-4"><AvatarBadge name={pair.memberA.displayName} index={pair.indexA} highlight={isToday} onJoin={pair.memberA.displayName === 'להצטרף' && profile ? () => void claimDutySlot(row, 'member1') : undefined} joining={claimBusy === `${row.isoDate}-member1`} /></div><div className="px-4"><AvatarBadge name={pair.memberB.displayName} index={pair.indexB} highlight={isToday} onJoin={pair.memberB.displayName === 'להצטרף' && profile ? () => void claimDutySlot(row, 'member2') : undefined} joining={claimBusy === `${row.isoDate}-member2`} /></div>
+              <div className="px-4"><AvatarBadge name={pair.memberA.displayName} index={pair.indexA} highlight={isToday} /></div><div className="px-4"><AvatarBadge name={pair.memberB.displayName} index={pair.indexB} highlight={isToday} /></div><div className="px-4">{row.memberC ? <AvatarBadge name={row.memberC.displayName} index={(pair.indexA + pair.indexB + 1) % 12} highlight={isToday} /> : profile && <button type="button" onClick={() => void claimDutySlot(row, 'volunteer')} disabled={claimBusy === `${row.isoDate}-volunteer`} className="rounded-xl border border-dashed border-primary/50 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-50">{claimBusy === `${row.isoDate}-volunteer` ? 'מצטרף...' : 'הצטרף לזוג'}</button>}</div>
               <div className="w-8 flex justify-center">{currentProfileIsDuty && !pendingOutgoing && <button onClick={() => setEditingDay(isEditing ? null : row.day)} className={`p-1.5 rounded-lg transition-colors ${isEditing ? 'bg-primary/15 text-primary' : 'hover:bg-muted'}`} aria-label="בקש החלפה"><Edit3 size={14} className={isEditing ? 'text-primary' : 'text-muted-foreground'} /></button>}</div>
             </div>
             {(pendingOutgoing || pendingIncoming || isEditing) && <div className="px-4 pb-3 space-y-2">
