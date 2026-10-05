@@ -45,6 +45,18 @@ function buildMonthlyRows(profiles: Profile[], start: string) {
   return rows;
 }
 
+function findNearTermDuplicatePairs(rows: Array<Pick<DutyRow, 'duty_date' | 'member1_id' | 'member2_id'>>, horizon = 14) {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const row of rows.slice(0, horizon)) {
+    if (!row.member1_id || !row.member2_id) continue;
+    const key = [row.member1_id, row.member2_id].sort().join(':');
+    if (seen.has(key)) duplicates.add(key);
+    seen.add(key);
+  }
+  return [...duplicates];
+}
+
 async function generateMonth(start: string) {
   const supabase = adminClient();
   const end = addDays(start, daysInMonth(start) - 1);
@@ -55,6 +67,8 @@ async function generateMonth(start: string) {
   const { error: deleteError } = await supabase.from('connection_duties').delete().gte('duty_date', start).lte('duty_date', end).eq('is_manual_override', false);
   if (deleteError) throw deleteError;
   const rows = buildMonthlyRows(activeProfiles, start);
+  const nearTermDuplicates = findNearTermDuplicatePairs(rows, 14);
+  if (nearTermDuplicates.length && activeProfiles.length >= 6) throw new Error(`near-term duplicate pairs detected: ${nearTermDuplicates.length}`);
   const { error: insertError } = await supabase.from('connection_duties').insert(rows);
   if (insertError) throw insertError;
   return { start, end, members: activeProfiles.length, rows: rows.length };
@@ -71,7 +85,7 @@ async function getDuties(request: Request) {
   const ids = [...new Set(rows.flatMap((row) => [row.member1_id, row.member2_id, row.member3_id]).filter(Boolean))] as string[];
   const { data: profiles } = ids.length ? await supabase.from('user_profiles').select('id,email,display_name,is_removed,connection_duty_enabled').in('id', ids).limit(200) : { data: [] as Array<Profile & { is_removed: boolean; connection_duty_enabled: boolean }> };
   const byId = new Map((profiles || []).map((profile) => [profile.id, profile]));
-  return NextResponse.json({ duties: rows.map((row) => ({ ...row, member1: row.member1_id ? byId.get(row.member1_id) || null : null, member2: row.member2_id ? byId.get(row.member2_id) || null : null, member3: row.member3_id ? byId.get(row.member3_id) || null : null })) });
+  return NextResponse.json({ duties: rows.map((row) => ({ ...row, member1: row.member1_id ? byId.get(row.member1_id) || null : null, member2: row.member2_id ? byId.get(row.member2_id) || null : null, member3: row.member3_id ? byId.get(row.member3_id) || null : null })), quality: { nearTermDuplicatePairs: findNearTermDuplicatePairs(rows, 14).length, checkedHorizonDays: 14 } });
 }
 
 async function runScheduledGeneration(request: Request) {
