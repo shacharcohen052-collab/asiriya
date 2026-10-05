@@ -91,9 +91,14 @@ export default function ClassScheduleAttendancePage() {
       const { data: plans, error: plansError } = profile?.id && eventIds.length
         ? await supabase.from('attendance_plans').select('event_id,plan').eq('user_id', profile.id).in('event_id', eventIds)
         : { data: [], error: null };
+      const { data: attendance, error: attendanceError } = profile?.id && eventIds.length
+        ? await supabase.from('actual_attendance').select('event_id,status').eq('user_id', profile.id).in('event_id', eventIds)
+        : { data: [], error: null };
       if (plansError) console.warn('Could not load attendance plans', plansError.message);
+      if (attendanceError) console.warn('Could not load attendance reports', attendanceError.message);
       const planByEvent = new Map((plans ?? []).map((plan) => [plan.event_id, plan.plan]));
-      setEvents(mapped.map((event) => ({ ...event, myPlan: planByEvent.get(event.id) ?? null })));
+      const attendanceByEvent = new Map((attendance ?? []).map((item) => [item.event_id, item.status]));
+      setEvents(mapped.map((event) => ({ ...event, myPlan: planByEvent.get(event.id) ?? null, myActualAttendance: attendanceByEvent.get(event.id) ?? null })));
     }
     setLoading(false);
   }, [isApproved, profile?.id, weekOffset]);
@@ -120,6 +125,8 @@ export default function ClassScheduleAttendancePage() {
         event_date: event.date,
         start_time: event.startTime,
         end_time: event.endTime,
+        counts_for_score: true,
+        score_value: 1,
       }));
     if (!rows.length) return;
     const { error } = await supabase.rpc('import_schedule_events', { p_events: rows });
@@ -128,6 +135,11 @@ export default function ClassScheduleAttendancePage() {
       toast.error(`שמירת הלו״ז נכשלה: ${message}`);
       throw error;
     }
+    const months = [...new Set(rows.map((row) => row.event_date.slice(0, 7)))];
+    await Promise.all(months.map((monthKey) => {
+      const [scoreYear, scoreMonth] = monthKey.split('-').map(Number);
+      return supabase.rpc('update_monthly_score', { p_user_id: profile.id, p_year: scoreYear, p_month: scoreMonth });
+    }));
     toast.success('הלו״ז נשמר ב־Supabase');
     await loadSchedule();
   };
@@ -166,8 +178,19 @@ export default function ClassScheduleAttendancePage() {
     toast.success(plan ? 'תכנון ההגעה עודכן' : 'תכנון ההגעה בוטל');
   };
 
-  const updateAttendance = (id: string, status: string) => {
+  const updateAttendance = async (id: string, status: string) => {
     setEvents((previous) => previous.map((event) => (event.id === id ? { ...event, myActualAttendance: status } : event)));
+    if (!profile?.id) return;
+    const event = events.find((item) => item.id === id);
+    const result = await supabase.from('actual_attendance').upsert({ user_id: profile.id, event_id: id, status, reported_at: new Date().toISOString() }, { onConflict: 'user_id,event_id' });
+    if (result.error) {
+      toast.error('שמירת דיווח הנוכחות נכשלה');
+      return;
+    }
+    if (event?.date) {
+      const date = new Date(`${event.date}T12:00:00`);
+      await supabase.rpc('update_monthly_score', { p_user_id: profile.id, p_year: date.getFullYear(), p_month: date.getMonth() + 1 });
+    }
     toast.success(status === 'attended' ? 'עודכן: הגעת' : 'עודכן: לא הגעת');
   };
 

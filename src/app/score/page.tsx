@@ -1,28 +1,18 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { MEMBERS, getInitials, getAvatarColor } from '@/data/members';
 import { Trophy, TrendingUp, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
 
 const MONTH_NAMES_HE = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
 ];
 
-// Mock scoring data — in production this comes from monthly_scores table
-function generateMockScores(year: number, month: number) {
-  const seed = year * 100 + month;
-  return MEMBERS.slice(0, 10).map((m, i) => ({
-    userId: String(m.profileId),
-    displayName: m.displayName,
-    score: Math.max(1, ((seed + i * 7) % 18) + 3),
-    eventsAttended: Math.max(1, ((seed + i * 3) % 8) + 1),
-    eventsTotal: 10,
-    avatarIdx: i,
-  })).sort((a, b) => b.score - a.score);
-}
-
-const MY_PROFILE_ID = '1'; // shachar cohen
+const supabase = createClient();
+type ScoreRow = { userId: string; displayName: string; score: number; eventsAttended: number; eventsTotal: number; avatarIdx: number };
 
 const RANK_MEDAL = ['🥇', '🥈', '🥉'];
 
@@ -30,22 +20,49 @@ export default function ScorePage() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
+  const [scores, setScores] = useState<ScoreRow[]>([]);
+  const [loadingScores, setLoadingScores] = useState(true);
+  const { profile } = useAuth();
 
-  const scores = generateMockScores(year, month);
-  const myScore = scores.find((s) => s.userId === MY_PROFILE_ID) || {
-    userId: MY_PROFILE_ID,
-    displayName: 'שחר כהן',
-    score: 8,
-    eventsAttended: 4,
-    eventsTotal: 10,
+  useEffect(() => {
+    let cancelled = false;
+    const loadScores = async () => {
+      setLoadingScores(true);
+      const [{ data: scoreRows }, { data: profiles }] = await Promise.all([
+        supabase.from('monthly_scores').select('user_id,score,events_attended,events_total').eq('year', year).eq('month', month + 1),
+        supabase.from('user_profiles').select('id,display_name'),
+      ]);
+      if (cancelled) return;
+      const profileMap = new Map((profiles || []).map((item) => [item.id, item.display_name]));
+      const mapped = (scoreRows || []).map((row, index) => ({
+        userId: row.user_id,
+        displayName: profileMap.get(row.user_id) || 'חבר',
+        score: row.score || 0,
+        eventsAttended: row.events_attended || 0,
+        eventsTotal: row.events_total || 0,
+        avatarIdx: index,
+      })).sort((a, b) => b.score - a.score);
+      setScores(mapped);
+      setLoadingScores(false);
+    };
+    void loadScores();
+    return () => { cancelled = true; };
+  }, [year, month]);
+
+  const myScore = scores.find((s) => s.userId === profile?.id) || {
+    userId: profile?.id || '',
+    displayName: profile?.display_name || 'הפרופיל שלי',
+    score: 0,
+    eventsAttended: 0,
+    eventsTotal: 0,
     avatarIdx: 0,
   };
-  const myRank = scores.findIndex((s) => s.userId === MY_PROFILE_ID) + 1;
+  const myRank = profile?.id ? scores.findIndex((s) => s.userId === profile.id) + 1 : 0;
 
   // Monthly history (last 6 months)
   const history = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(year, month - i, 1);
-    const s = generateMockScores(d.getFullYear(), d.getMonth()).find((x) => x.userId === MY_PROFILE_ID);
+    const s = d.getFullYear() === year && d.getMonth() === month ? myScore : undefined;
     return {
       label: `${MONTH_NAMES_HE[d.getMonth()]} ${d.getFullYear()}`,
       score: s?.score ?? 0,
@@ -102,7 +119,7 @@ export default function ScorePage() {
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-foreground">{myScore.displayName} <span className="text-xs text-muted-foreground">(אני)</span></p>
-                <p className="text-xs text-muted-foreground">{myScore.eventsAttended} מתוך {myScore.eventsTotal} אירועים</p>
+                      <p className="text-xs text-muted-foreground">נוכחות: השתתפת ב־{myScore.eventsAttended} מתוך {myScore.eventsTotal} אירועים</p>
               </div>
               <div className="text-left">
                 <p className="text-2xl font-bold text-primary font-tabular">{myScore.score}</p>
@@ -124,7 +141,7 @@ export default function ScorePage() {
             </div>
             <div className="divide-y divide-border">
               {scores.map((s, idx) => {
-                const isMe = s.userId === MY_PROFILE_ID;
+                const isMe = s.userId === profile?.id;
                 return (
                   <div
                     key={`score-${s.userId}`}
@@ -147,8 +164,8 @@ export default function ScorePage() {
                       <span className="text-sm font-bold text-foreground font-tabular">{s.score}</span>
                       <span className="text-xs text-muted-foreground mr-1">נק׳</span>
                     </div>
-                    <div className="text-left text-xs text-muted-foreground w-16">
-                      {s.eventsAttended}/{s.eventsTotal}
+                    <div className="text-left text-xs text-muted-foreground w-24">
+                      {s.eventsAttended} מתוך {s.eventsTotal}
                     </div>
                   </div>
                 );
@@ -177,7 +194,7 @@ export default function ScorePage() {
                       style={{ width: `${(h.score / maxScore) * 100}%` }}
                     />
                   </div>
-                  <p className="text-2xs text-muted-foreground mt-0.5">{h.attended}/{h.total} אירועים</p>
+                  <p className="text-2xs text-muted-foreground mt-0.5">נוכחות: {h.attended} מתוך {h.total} אירועים</p>
                 </div>
               ))}
             </div>
@@ -191,24 +208,16 @@ export default function ScorePage() {
             </div>
             <div className="space-y-2 text-xs text-muted-foreground">
               <div className="flex items-center justify-between">
-                <span>לימוד בקהילת הצעירים</span>
-                <span className="font-bold text-foreground">3 נק׳</span>
+                <span>כל פעילות שהשתתפת בה</span>
+                <span className="font-bold text-foreground">1 נק׳</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>שיעור בוקר</span>
-                <span className="font-bold text-foreground">2 נק׳</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>ערב גיבוש</span>
-                <span className="font-bold text-foreground">3 נק׳</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>זום PT100</span>
-                <span className="font-bold text-foreground">לא מזכה</span>
+                <span>כולל זום PT100</span>
+                <span className="font-bold text-foreground">1 נק׳</span>
               </div>
             </div>
             <p className="text-2xs text-muted-foreground mt-3 pt-3 border-t border-border">
-              ניקוד מחושב רק על בסיס דיווחים אישיים שדיווחת
+              לדוגמה: 8/10 פירושו שהשתתפת ב־8 מתוך 10 פעילויות שמופיעות בלוח של החודש. כל פעילות, כולל זום PT100, שווה נקודה אחת. הנתונים מתעדכנים אחרי דיווח נוכחות או הוספת פעילות.
             </p>
           </div>
         </div>
