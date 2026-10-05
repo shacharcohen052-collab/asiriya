@@ -159,7 +159,9 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
       continue;
     }
     const timeMatch = cleanLine.match(timeRegex);
-    const dateMatch = cleanLine.match(dateRegex);
+    // A slash inside an event title (for example 2025/26) is not a date.
+    // Parse numeric dates only on standalone/header lines, or before a time range.
+    const dateMatch = timeMatch ? null : cleanLine.match(dateRegex);
     const hebrewHeader = cleanLine.match(/^(?:יום\s+)?(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)\s*,?\s*(\d{1,2})\s+(?:ב)?([א-ת]+)(?:\s+(\d{4}))?\s*$/);
     const dayMatch = HEBREW_DAYS.findIndex((day) => new RegExp(`(?:^|\\s)(?:יום\\s+)?${day}(?:[\\s,]|$)`).test(cleanLine));
     if (hebrewHeader) {
