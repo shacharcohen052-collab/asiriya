@@ -145,7 +145,6 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
   const timeRegex = /(\d{1,2}[:.]\d{2})\s*(?:[-–—]|עד|to)\s*(\d{1,2}[:.]\d{2})/i;
   // Do not treat a range such as "25-26 ספטמבר" as a numeric date.
   // Hyphenated dates are accepted only when they contain a year.
-  const dateRegex = /(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?|\b(\d{1,2})-(\d{1,2})-(\d{2,4})\b/;
   const rangeYearRegex = /\b\d{1,2}\s*[–—-]\s*\d{1,2}\s+(?:ב)?([א-ת]+)\s+(\d{4})\b/;
   let currentDate = '';
   let currentYear = new Date().getFullYear();
@@ -161,7 +160,6 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
     const timeMatch = cleanLine.match(timeRegex);
     // A slash inside an event title (for example 2025/26) is not a date.
     // Parse numeric dates only on standalone/header lines, or before a time range.
-    const dateMatch = timeMatch ? null : cleanLine.match(dateRegex);
     const hebrewHeader = cleanLine.match(/^(?:יום\s+)?(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)\s*,?\s*(\d{1,2})\s+(?:ב)?([א-ת]+)(?:\s+(\d{4}))?\s*$/);
     const dayMatch = HEBREW_DAYS.findIndex((day) => new RegExp(`(?:^|\\s)(?:יום\\s+)?${day}(?:[\\s,]|$)`).test(cleanLine));
     if (hebrewHeader) {
@@ -172,20 +170,13 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
       } else if (dayMatch >= 0) {
         currentDate = getWeekDayDate(dayMatch);
       }
-    } else if (dayMatch >= 0 && !dateMatch) {
+    } else if (dayMatch >= 0) {
       currentDate = getWeekDayDate(dayMatch);
-    }
-    if (dateMatch) {
-      const day = Number(dateMatch[1] || dateMatch[4]);
-      const month = Number(dateMatch[2] || dateMatch[5]);
-      const rawYear = dateMatch[3] || dateMatch[6];
-      const year = rawYear ? Number(rawYear.length === 2 ? `20${rawYear}` : rawYear) : new Date().getFullYear();
-      currentDate = toIsoDate(year, month, day) || '';
     }
     if (timeMatch) {
       const startTime = timeMatch[1].replace('.', ':');
       const endTime = timeMatch[2].replace('.', ':');
-      const title = cleanLine.replace(timeRegex, '').replace(dateRegex, '').trim().replace(/^[-–: ,\s]+/, '').trim().replace(/^\*+|\*+$/g, '').trim();
+      const title = cleanLine.replace(timeRegex, '').trim().replace(/^[-–: ,\s]+/, '').trim().replace(/^\*+|\*+$/g, '').trim();
       if (/הכנה\s+לשיעור|הפסקה|תפילה|לא\s+משודר/i.test(title)) continue;
       const event: Partial<ScheduleEvent> = {
         id: `imported-${Date.now()}-${Math.random()}`,
