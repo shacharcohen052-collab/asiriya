@@ -81,6 +81,10 @@ const HEBREW_MONTHS: Record<string, number> = {
   יולי: 7, אוגוסט: 8, ספטמבר: 9, אוקטובר: 10, נובמבר: 11, דצמבר: 12,
 };
 
+function normalizeMonthName(value: string) {
+  return value.replace(/[\u200e\u200f*]/g, '').trim().replace(/^ב/, '');
+}
+
 function createFixedEvents(dates: string[]): ScheduleEvent[] {
   return dates.flatMap((date) => {
     const day = new Date(`${date}T12:00:00`).getDay();
@@ -136,7 +140,7 @@ function isValidIsoDate(value: string | undefined): value is string {
 }
 
 function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const lines = text.replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim()).filter(Boolean);
   const events: Partial<ScheduleEvent>[] = [];
   const timeRegex = /(\d{1,2}[:.]\d{2})\s*(?:[-–—]|עד|to)\s*(\d{1,2}[:.]\d{2})/i;
   // Do not treat a range such as "25-26 ספטמבר" as a numeric date.
@@ -148,17 +152,18 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
   let lastEvent: Partial<ScheduleEvent> | null = null;
 
   for (const line of lines) {
-    const rangeYearMatch = line.match(rangeYearRegex);
+    const cleanLine = line.replace(/^[*]+|[*]+$/g, '').trim();
+    const rangeYearMatch = cleanLine.match(rangeYearRegex);
     if (rangeYearMatch) {
       currentYear = Number(rangeYearMatch[2]);
       continue;
     }
-    const timeMatch = line.match(timeRegex);
-    const dateMatch = line.match(dateRegex);
-    const hebrewHeader = line.match(/(?:\*\s*)?(?:יום\s+)?(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)\s*,?\s*(\d{1,2})\s+(?:ב)?([א-ת]+)(?:\s+(\d{4}))?/);
-    const dayMatch = HEBREW_DAYS.findIndex((day) => new RegExp(`(?:^|\s)(?:יום\s+)?${day}(?:[\s,]|$)`).test(line));
+    const timeMatch = cleanLine.match(timeRegex);
+    const dateMatch = cleanLine.match(dateRegex);
+    const hebrewHeader = cleanLine.match(/^(?:יום\s+)?(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)\s*,?\s*(\d{1,2})\s+(?:ב)?([א-ת]+)(?:\s+(\d{4}))?\s*$/);
+    const dayMatch = HEBREW_DAYS.findIndex((day) => new RegExp(`(?:^|\\s)(?:יום\\s+)?${day}(?:[\\s,]|$)`).test(cleanLine));
     if (hebrewHeader) {
-      const month = HEBREW_MONTHS[hebrewHeader[3]];
+      const month = HEBREW_MONTHS[normalizeMonthName(hebrewHeader[3])];
       if (hebrewHeader[4]) currentYear = Number(hebrewHeader[4]);
       if (month) {
         currentDate = toIsoDate(currentYear, month, Number(hebrewHeader[2])) || '';
@@ -178,7 +183,7 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
     if (timeMatch) {
       const startTime = timeMatch[1].replace('.', ':');
       const endTime = timeMatch[2].replace('.', ':');
-      const title = line.replace(timeRegex, '').replace(dateRegex, '').trim().replace(/^[-–: ,\s]+/, '').trim().replace(/^\*+|\*+$/g, '').trim();
+      const title = cleanLine.replace(timeRegex, '').replace(dateRegex, '').trim().replace(/^[-–: ,\s]+/, '').trim().replace(/^\*+|\*+$/g, '').trim();
       if (/הכנה\s+לשיעור|הפסקה|תפילה|לא\s+משודר/i.test(title)) continue;
       const event: Partial<ScheduleEvent> = {
         id: `imported-${Date.now()}-${Math.random()}`,
@@ -202,7 +207,7 @@ function parseScheduleText(text: string): Partial<ScheduleEvent>[] {
       events.push(event);
       lastEvent = event;
     } else if (lastEvent && /^[-–—]/.test(line)) {
-      const continuation = line.replace(/^[-–—]\s*/, '').trim();
+      const continuation = cleanLine.replace(/^[-–—]\s*/, '').trim();
       if (continuation) lastEvent.title = `${lastEvent.title} — ${continuation}`;
     }
   }
@@ -259,8 +264,9 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
       toast.error('לא נמצאו אירועים. ודא שיש שעות בפורמט HH:MM - HH:MM');
       return;
     }
-    if (events.some((event) => !isValidIsoDate(event.date))) {
-      toast.error('נמצא תאריך לא תקין. בדוק את כותרות הימים והתאריך ונסה שוב.');
+    const invalidEvent = events.find((event) => !isValidIsoDate(event.date));
+    if (invalidEvent) {
+      toast.error(`לא הצלחתי לזהות תאריך עבור "${invalidEvent.title || 'אירוע'}". השתמש בכותרת כמו: יום ראשון, 4 אוקטובר 2026`);
       return;
     }
     // Add the fixed daily meetings for every imported date.
@@ -328,8 +334,8 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 fade-in">
-      <div className="bg-card border border-border rounded-2xl card-shadow-md w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 fade-in sm:items-center sm:p-4">
+      <div className="bg-card border border-border rounded-t-2xl card-shadow-md w-full max-w-lg max-h-[94vh] overflow-y-auto sm:rounded-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <CalendarDays size={18} className="text-primary" />
@@ -355,13 +361,15 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
           ))}
         </div>
 
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           {tab === 'paste' && step === 'input' && (
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground block mb-2">הדבק לו&quot;ז שבועי</label>
                 <textarea
-                  className="input-field min-h-[160px] text-sm font-mono resize-y"
+                  className="input-field min-h-[230px] text-sm leading-6 resize-y"
+                  dir="rtl"
+                  spellCheck={false}
                   placeholder={'שלישי 15/09\n06:00 - 07:00 שיעור בוקר\n18:30 - 21:00 לימוד בקהילה'}
                   value={pasteText}
                   onChange={(e) => setPasteText(e.target.value)}
@@ -394,7 +402,7 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
                   ))}
                 </div>
               )}
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-2 max-h-[42vh] overflow-y-auto rounded-xl bg-muted/20 p-1">
                 {parsed.map((e, i) => (
                   <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border ${e.isFixed ? 'border-primary/25 bg-primary/5' : 'border-border bg-muted/30'}`}>
                     {e.isFixed && <Star size={13} className="text-primary flex-shrink-0" />}
@@ -412,11 +420,11 @@ export default function AddScheduleModal({ onClose, onAdd = () => {}, existingEv
                   </div>
                 ))}
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
                 <button onClick={handleConfirmPaste} className="btn-primary flex-1">
                   <Check size={15} /> הוסף {parsed.length} אירועים
                 </button>
-                <button onClick={() => setStep('input')} className="btn-secondary">חזור</button>
+                <button onClick={() => setStep('input')} className="btn-secondary">חזור לעריכה</button>
               </div>
             </div>
           )}
